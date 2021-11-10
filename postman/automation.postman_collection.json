@@ -1,13 +1,13 @@
 {
 	"info": {
-		"_postman_id": "cc2e6501-8740-4c47-9e7e-9f09f1ead23a",
+		"_postman_id": "8959ed9a-8f67-4635-a1ed-86c7306378e2",
 		"name": "Octobrowser API",
-		"description": "Get token first:\n\n![](https://github.com/octobrowser/documentation/raw/initial_doc/media/05_client_token.png)",
+		"description": "Get API Token:\n\n![](https://github.com/octobrowser/documentation/raw/initial_doc/media/05_client_token.png)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "profiles",
+			"name": "Profiles",
 			"item": [
 				{
 					"name": "Get Profiles",
@@ -73,7 +73,7 @@
 								"header": [
 									{
 										"key": "X-Octo-Api-Token",
-										"value": "{{TOKEN}}"
+										"value": "{API_TOKEN}"
 									}
 								],
 								"url": {
@@ -179,7 +179,7 @@
 									},
 									{
 										"key": "X-Octo-Api-Token",
-										"value": "{{TOKEN}}"
+										"value": "{TOKEN}"
 									}
 								],
 								"body": {
@@ -298,7 +298,7 @@
 									},
 									{
 										"key": "X-Octo-Api-Token",
-										"value": "{{TOKEN}}"
+										"value": "{API_TOKEN}"
 									}
 								],
 								"body": {
@@ -344,7 +344,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v2/automation/profiles/:UUID",
+							"raw": "{{baseUrl}}/api/v2/automation/profiles/:uuid",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -353,11 +353,11 @@
 								"v2",
 								"automation",
 								"profiles",
-								":UUID"
+								":uuid"
 							],
 							"variable": [
 								{
-									"key": "UUID",
+									"key": "uuid",
 									"value": "{{PROFILE_UUID}}",
 									"description": "Profile UUID"
 								}
@@ -373,11 +373,11 @@
 									{
 										"description": "API Token",
 										"key": "X-Octo-Api-Token",
-										"value": "{{API_TOKEN}}"
+										"value": "{API_TOKEN}"
 									}
 								],
 								"url": {
-									"raw": "{{baseUrl}}/api/v2/automation/profiles/:UUID",
+									"raw": "{{baseUrl}}/api/v2/automation/profiles/:uuid",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -386,13 +386,17 @@
 										"v2",
 										"automation",
 										"profiles",
-										":UUID"
+										":uuid"
 									],
 									"variable": [
 										{
-											"key": "UUID",
-											"value": "{{PROFILE_UUID}}",
+											"key": "uuid",
+											"value": "{PROFILE_UUID}",
 											"description": "Profile UUID"
+										},
+										{
+											"value": "{{PROFILE_UUID}}",
+											"key": "UUID"
 										}
 									]
 								}
@@ -513,7 +517,7 @@
 									{
 										"description": "API Token",
 										"key": "X-Octo-Api-Token",
-										"value": "{{API_TOKEN}}"
+										"value": "{API_TOKEN}"
 									}
 								],
 								"body": {
@@ -540,7 +544,7 @@
 									"variable": [
 										{
 											"key": "uuid",
-											"value": "{{PROFILE_UUID}}",
+											"value": "{PROFILE_UUID}",
 											"description": "Profile UUID"
 										}
 									]
@@ -660,7 +664,7 @@
 									{
 										"description": "API Token",
 										"key": "X-Octo-Api-Token",
-										"value": "{{API_TOKEN}}"
+										"value": "{API_TOKEN}"
 									}
 								],
 								"body": {
@@ -689,7 +693,7 @@
 									"variable": [
 										{
 											"key": "uuid",
-											"value": "{{PROFILE_UUID}}",
+											"value": "{PROFILE_UUID}",
 											"description": "Profile UUID"
 										}
 									]
@@ -775,7 +779,7 @@
 			]
 		},
 		{
-			"name": "tags",
+			"name": "Tags",
 			"item": [
 				{
 					"name": "Get Tags",
@@ -809,7 +813,7 @@
 								"header": [
 									{
 										"key": "X-Octo-Api-Token",
-										"value": "{{TOKEN}}"
+										"value": "{API_TOKEN}"
 									}
 								],
 								"url": {
@@ -883,7 +887,7 @@
 									},
 									{
 										"key": "X-Octo-Api-Token",
-										"value": "{{TOKEN}}"
+										"value": "{API_TOKEN}"
 									}
 								],
 								"body": {
@@ -965,7 +969,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v2/automation/tags/:UUID",
+							"raw": "{{baseUrl}}/api/v2/automation/tags/:uuid",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -974,11 +978,11 @@
 								"v2",
 								"automation",
 								"tags",
-								":UUID"
+								":uuid"
 							],
 							"variable": [
 								{
-									"key": "UUID",
+									"key": "uuid",
 									"value": "{{TAG_UUID}}",
 									"description": "Tag UUID"
 								}
@@ -993,11 +997,11 @@
 								"header": [
 									{
 										"key": "X-Octo-Api-Token",
-										"value": "{{TOKEN}}"
+										"value": "{API_TOKEN}"
 									}
 								],
 								"url": {
-									"raw": "{{baseUrl}}/api/v2/automation/tags/:UUID",
+									"raw": "{{baseUrl}}/api/v2/automation/tags/:uuid",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -1006,17 +1010,17 @@
 										"v2",
 										"automation",
 										"tags",
-										":UUID"
+										":uuid"
 									],
 									"variable": [
 										{
-											"key": "UUID",
-											"value": "{{TAG_UUID}}",
+											"key": "uuid",
+											"value": "{TAG_UUID}",
 											"description": "Tag UUID"
 										},
 										{
 											"value": "{{TAG_UUID}}",
-											"key": "uuid"
+											"key": "UUID"
 										}
 									]
 								}
@@ -1055,7 +1059,7 @@
 							"raw": "{\n    \"name\": \"supertag1\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v2/automation/tags/:UUID",
+							"raw": "{{baseUrl}}/api/v2/automation/tags/:uuid",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -1064,11 +1068,11 @@
 								"v2",
 								"automation",
 								"tags",
-								":UUID"
+								":uuid"
 							],
 							"variable": [
 								{
-									"key": "UUID",
+									"key": "uuid",
 									"value": "{{TAG_UUID}}",
 									"description": "Tag UUID"
 								}
@@ -1087,7 +1091,7 @@
 									},
 									{
 										"key": "X-Octo-Api-Token",
-										"value": "{{TOKEN}}"
+										"value": "{API_TOKEN}"
 									}
 								],
 								"body": {
@@ -1095,7 +1099,7 @@
 									"raw": "{\n    \"name\": \"supertag1\"\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/api/v2/automation/tags/:UUID",
+									"raw": "{{baseUrl}}/api/v2/automation/tags/:uuid",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -1104,17 +1108,17 @@
 										"v2",
 										"automation",
 										"tags",
-										":UUID"
+										":uuid"
 									],
 									"variable": [
 										{
-											"key": "UUID",
-											"value": "{{PROFILE_UUID}}",
+											"key": "uuid",
+											"value": "{TAG_UUID}",
 											"description": "Tag UUID"
 										},
 										{
-											"value": "{{TAG_UUID}}",
-											"key": "uuid"
+											"value": "{{PROFILE_UUID}}",
+											"key": "UUID"
 										}
 									]
 								}
@@ -1136,7 +1140,7 @@
 			]
 		},
 		{
-			"name": "proxies",
+			"name": "Proxies",
 			"item": [
 				{
 					"name": "Get Proxies",
@@ -1170,7 +1174,7 @@
 								"header": [
 									{
 										"key": "X-Octo-Api-Token",
-										"value": "{{TOKEN}}"
+										"value": "{API_TOKEN}"
 									}
 								],
 								"url": {
@@ -1249,7 +1253,7 @@
 									},
 									{
 										"key": "X-Octo-Api-Token",
-										"value": "{{TOKEN}}"
+										"value": "{API_TOKEN}"
 									}
 								],
 								"body": {
@@ -1364,7 +1368,7 @@
 								"header": [
 									{
 										"key": "X-Octo-Api-Token",
-										"value": "{{TOKEN}}"
+										"value": "{API_TOKEN}"
 									}
 								],
 								"url": {
@@ -1382,7 +1386,7 @@
 									"variable": [
 										{
 											"key": "uuid",
-											"value": "{{PROXY_UUID}}",
+											"value": "{PROXY_UUID}",
 											"description": "Proxy UUID"
 										}
 									]
@@ -1459,7 +1463,7 @@
 									},
 									{
 										"key": "X-Octo-Api-Token",
-										"value": "{{TOKEN}}"
+										"value": "{API_TOKEN}"
 									}
 								],
 								"body": {
@@ -1486,7 +1490,7 @@
 									"variable": [
 										{
 											"key": "uuid",
-											"value": "{{PROXY_UUID}}",
+											"value": "{PROXY_UUID}",
 											"description": "Proxy UUID"
 										}
 									]
@@ -1509,7 +1513,7 @@
 			]
 		},
 		{
-			"name": "http://localhost:58888",
+			"name": "Local client API",
 			"item": [
 				{
 					"name": "List Active Profiles",
@@ -1527,7 +1531,7 @@
 								"active"
 							]
 						},
-						"description": "Response will show an URL for automation if it is enabled for the running profile"
+						"description": "Shows list of profiles launched on your PC. <b>webSocketDebuggerUrl</b> will be shown only for profiles that are launched in <b>headless</b> mode."
 					},
 					"response": [
 						{
@@ -1760,6 +1764,7 @@
 					]
 				}
 			],
+			"description": "Local client API to run profiles\n\ndefault server port is <b>58888<b>\n\nAPI url is <b>http://localhost:5888</b>",
 			"auth": {
 				"type": "noauth"
 			},
