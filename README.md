@@ -6,7 +6,7 @@ Requirements:
 * octobrowser account with at least *Base* subscription level
 
 
-Public documentation is available here: https://documenter.getpostman.com/view/1801428/UVC6h6aR
+Public documentation is available here: https://documenter.getpostman.com/view/1801428/UVC6i6eA
 
 
 
