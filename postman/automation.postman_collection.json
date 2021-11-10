@@ -118,7 +118,7 @@
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
 								{
 									"key": "Content-Type",
@@ -147,7 +147,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"title\": \"Test profile from api\",\n    \"description\": \"test description\",\n    \"start_page\": \"https://fb.com\",\n    \"tags\": [\n        \"octo\"\n    ],\n    \"proxy\": {\n        \"type\": \"socks5\",\n        \"host\": \"1.1.1.1\",\n        \"port\": 5555,\n        \"login\": \"\",\n        \"password\": \"\"\n    },\n    \"storage_options\": {\n        \"cookies\": true,\n        \"passwords\": true,\n        \"extensions\": true,\n        \"localstorage\": false,\n        \"history\": false,\n        \"bookmarks\": true\n    },\n    \"cookies\": \"[{\\\"domain\\\":\\\".google.com\\\",\\\"expirationDate\\\":1639134293.313654,\\\"hostOnly\\\":false,\\\"httpOnly\\\":false,\\\"name\\\":\\\"1P_JAR\\\",\\\"path\\\":\\\"/\\\",\\\"sameSite\\\":\\\"no_restriction\\\",\\\"secure\\\":true,\\\"value\\\":\\\"2021-11-10-11\\\"}]\",\n    \"image\": \"36fb48f4e99d47d3b18383d0c27feac2\",\n    \"extensions\": [],\n    \"fingerprint\": {\n        \"os\": \"win\",\n        \"user_agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36\",\n        \"screen\": \"1920x1080\",\n        \"languages\": {\n            \"type\": \"ip\"\n        },\n        \"timezone\": {\n            \"type\": \"ip\"\n        },\n        \"geolocation\": {\n            \"type\": \"ip\"\n        },\n        \"cpu\": 4,\n        \"ram\": 8,\n        \"noise\": {\n            \"webgl\": true,\n            \"canvas\": false,\n            \"audio\": true,\n            \"client_rects\": false\n        },\n        \"webrtc\": {\n            \"type\": \"ip\"\n        },\n        \"dns\": \"1.1.1.1\",\n        \"media_devices\": {\n            \"video_in\": 1,\n            \"audio_in\": 1,\n            \"audio_out\": 1\n        }\n    }\n}",
+							"raw": "{\n    \"title\": \"Test profile from api\", // [required]\n    \"description\": \"test description\", // [optional]\n    \"start_page\": \"https://fb.com\",\n    \"tags\": [\n        \"octo\"\n    ],\n    \"proxy\": {\n        \"type\": \"socks5\",\n        \"host\": \"1.1.1.1\",\n        \"port\": 5555,\n        \"login\": \"\",\n        \"password\": \"\"\n    },\n    \"storage_options\": {\n        \"cookies\": true,\n        \"passwords\": true,\n        \"extensions\": true,\n        \"localstorage\": false,\n        \"history\": false,\n        \"bookmarks\": true\n    },\n    \"cookies\": \"[{\\\"domain\\\":\\\".google.com\\\",\\\"expirationDate\\\":1639134293.313654,\\\"hostOnly\\\":false,\\\"httpOnly\\\":false,\\\"name\\\":\\\"1P_JAR\\\",\\\"path\\\":\\\"/\\\",\\\"sameSite\\\":\\\"no_restriction\\\",\\\"secure\\\":true,\\\"value\\\":\\\"2021-11-10-11\\\"}]\",\n    \"image\": \"36fb48f4e99d47d3b18383d0c27feac2\",\n    \"extensions\": [],\n    \"fingerprint\": {\n        \"os\": \"win\",\n        \"user_agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36\",\n        \"screen\": \"1920x1080\",\n        \"languages\": {\n            \"type\": \"ip\"\n        },\n        \"timezone\": {\n            \"type\": \"ip\"\n        },\n        \"geolocation\": {\n            \"type\": \"ip\"\n        },\n        \"cpu\": 4,\n        \"ram\": 8,\n        \"noise\": {\n            \"webgl\": true,\n            \"canvas\": false,\n            \"audio\": true,\n            \"client_rects\": false\n        },\n        \"webrtc\": {\n            \"type\": \"ip\"\n        },\n        \"dns\": \"1.1.1.1\",\n        \"media_devices\": {\n            \"video_in\": 1,\n            \"audio_in\": 1,\n            \"audio_out\": 1\n        }\n    }\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -179,7 +179,7 @@
 									},
 									{
 										"key": "X-Octo-Api-Token",
-										"value": "{TOKEN}"
+										"value": "{API_TOKEN}"
 									}
 								],
 								"body": {
@@ -206,47 +206,11 @@
 							},
 							"status": "CREATED",
 							"code": 201,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
-								{
-									"key": "Date",
-									"value": "Wed, 10 Nov 2021 11:44:12 GMT"
-								},
 								{
 									"key": "Content-Type",
 									"value": "application/json"
-								},
-								{
-									"key": "Content-Length",
-									"value": "82"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								},
-								{
-									"key": "CF-Cache-Status",
-									"value": "DYNAMIC"
-								},
-								{
-									"key": "Expect-CT",
-									"value": "max-age=604800, report-uri=\"https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct\""
-								},
-								{
-									"key": "Report-To",
-									"value": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=L28igcPVtkVZY1BacrDDiBfgGyyz0PTP%2Fn7%2FfhHH5zaETIBUc%2F0NNfM2%2FY9Ey%2F0EC%2BH8S4Zw13W2ic2RZxdvE5AFGQzhb%2F1yszSSf9tascOqenakNe1euNbXMf%2FqMebPSydyO6M%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}"
-								},
-								{
-									"key": "NEL",
-									"value": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}"
-								},
-								{
-									"key": "Server",
-									"value": "cloudflare"
-								},
-								{
-									"key": "CF-RAY",
-									"value": "6abf070b3d36d45f-HAM"
 								}
 							],
 							"cookie": [],
@@ -320,7 +284,7 @@
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
 								{
 									"key": "Content-Type",
@@ -393,10 +357,6 @@
 											"key": "uuid",
 											"value": "{PROFILE_UUID}",
 											"description": "Profile UUID"
-										},
-										{
-											"value": "{{PROFILE_UUID}}",
-											"key": "UUID"
 										}
 									]
 								}
@@ -406,52 +366,8 @@
 							"_postman_previewlanguage": "json",
 							"header": [
 								{
-									"key": "Date",
-									"value": "Wed, 10 Nov 2021 19:30:00 GMT"
-								},
-								{
 									"key": "Content-Type",
 									"value": "application/json"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								},
-								{
-									"key": "Vary",
-									"value": "Accept-Encoding"
-								},
-								{
-									"key": "Content-Encoding",
-									"value": "gzip"
-								},
-								{
-									"key": "CF-Cache-Status",
-									"value": "DYNAMIC"
-								},
-								{
-									"key": "Expect-CT",
-									"value": "max-age=604800, report-uri=\"https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct\""
-								},
-								{
-									"key": "Report-To",
-									"value": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=NC83rOPvP5sZPNoeMGLN2zVNYxFnjC9nFwxOHymwvJJIB42JnG%2FtBdRKDU4jfrVEKIzdHqJZ2zmqZOfA7az3vRF775LXOVZxD0nv%2FYSDWbsGaBm6L3r3JkkdqsRI3RDrGeGizXY%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}"
-								},
-								{
-									"key": "NEL",
-									"value": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}"
-								},
-								{
-									"key": "Server",
-									"value": "cloudflare"
-								},
-								{
-									"key": "CF-RAY",
-									"value": "6ac1b162be25414a-HAM"
 								}
 							],
 							"cookie": [],
@@ -555,48 +471,8 @@
 							"_postman_previewlanguage": "json",
 							"header": [
 								{
-									"key": "Date",
-									"value": "Wed, 10 Nov 2021 19:30:38 GMT"
-								},
-								{
 									"key": "Content-Type",
 									"value": "application/json"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								},
-								{
-									"key": "CF-Cache-Status",
-									"value": "DYNAMIC"
-								},
-								{
-									"key": "Expect-CT",
-									"value": "max-age=604800, report-uri=\"https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct\""
-								},
-								{
-									"key": "Report-To",
-									"value": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=BhKN6jBkKVy9qkXuKOOlphr5Ch22%2FhR0FwlHkKbERU0c%2FaOrD6TdLXRnoet2V6Gv8ldLLHrBr9sCFS1Gy6DtIa5ol0d6VNCHsCTtuA%2F5I4gggpyVC3UAkIfs70BR7gJfcHD2F4k%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}"
-								},
-								{
-									"key": "NEL",
-									"value": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}"
-								},
-								{
-									"key": "Server",
-									"value": "cloudflare"
-								},
-								{
-									"key": "CF-RAY",
-									"value": "6ac1b24b8da7414a-HAM"
-								},
-								{
-									"key": "Content-Encoding",
-									"value": "gzip"
 								}
 							],
 							"cookie": [],
@@ -701,55 +577,15 @@
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "html",
+							"_postman_previewlanguage": "json",
 							"header": [
 								{
-									"key": "Date",
-									"value": "Wed, 10 Nov 2021 19:31:10 GMT"
-								},
-								{
 									"key": "Content-Type",
-									"value": "text/html; charset=utf-8"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								},
-								{
-									"key": "CF-Cache-Status",
-									"value": "DYNAMIC"
-								},
-								{
-									"key": "Expect-CT",
-									"value": "max-age=604800, report-uri=\"https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct\""
-								},
-								{
-									"key": "Report-To",
-									"value": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=PaM1F%2BBrrHoMdDUgtsZ6Z3sfE0S13BhziQM1pC%2BDjUo%2BjZZu8w4dTlz%2FK81XGy83j3mFUkay3qIGdQKFqg1do3tytQT2%2FFSslqmUkpZ7UkPq4vCSm%2Biqoo5mLRMSmHxUSpuS9Gg%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}"
-								},
-								{
-									"key": "NEL",
-									"value": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}"
-								},
-								{
-									"key": "Server",
-									"value": "cloudflare"
-								},
-								{
-									"key": "CF-RAY",
-									"value": "6ac1b3187f73414a-HAM"
-								},
-								{
-									"key": "Content-Encoding",
-									"value": "gzip"
+									"value": "application/json"
 								}
 							],
 							"cookie": [],
-							"body": "{\"success\": true, \"msg\": \"Cookies imported\", \"data\": \"\"}"
+							"body": "{\n    \"success\": true,\n    \"msg\": \"Cookies imported\",\n    \"data\": \"\"\n}"
 						}
 					]
 				}
@@ -831,7 +667,7 @@
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
 								{
 									"key": "Content-Type",
@@ -909,47 +745,11 @@
 							},
 							"status": "CREATED",
 							"code": 201,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
-								{
-									"key": "Date",
-									"value": "Wed, 10 Nov 2021 12:13:25 GMT"
-								},
 								{
 									"key": "Content-Type",
 									"value": "application/json"
-								},
-								{
-									"key": "Content-Length",
-									"value": "102"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								},
-								{
-									"key": "CF-Cache-Status",
-									"value": "DYNAMIC"
-								},
-								{
-									"key": "Expect-CT",
-									"value": "max-age=604800, report-uri=\"https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct\""
-								},
-								{
-									"key": "Report-To",
-									"value": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=LoFEpVuqPNuegGVbROp0GvNdgMWEA0bX1vLTupgTIZ6SZwhfeQd3yAzqpTVI3z%2BihhD%2B3LEcrG2Z5h585nqK4xHaBH6OUq4X4%2BDUKOPkOAJM91tJ6QaeAU1cNG2nAMeGFGHcmEM%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}"
-								},
-								{
-									"key": "NEL",
-									"value": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}"
-								},
-								{
-									"key": "Server",
-									"value": "cloudflare"
-								},
-								{
-									"key": "CF-RAY",
-									"value": "6abf31d8bad0727c-HAM"
 								}
 							],
 							"cookie": [],
@@ -1017,17 +817,13 @@
 											"key": "uuid",
 											"value": "{TAG_UUID}",
 											"description": "Tag UUID"
-										},
-										{
-											"value": "{{TAG_UUID}}",
-											"key": "UUID"
 										}
 									]
 								}
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
 								{
 									"key": "Content-Type",
@@ -1115,17 +911,13 @@
 											"key": "uuid",
 											"value": "{TAG_UUID}",
 											"description": "Tag UUID"
-										},
-										{
-											"value": "{{PROFILE_UUID}}",
-											"key": "UUID"
 										}
 									]
 								}
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
 								{
 									"key": "Content-Type",
@@ -1192,7 +984,7 @@
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
 								{
 									"key": "Content-Type",
@@ -1280,47 +1072,11 @@
 							},
 							"status": "CREATED",
 							"code": 201,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
-								{
-									"key": "Date",
-									"value": "Wed, 10 Nov 2021 12:14:32 GMT"
-								},
 								{
 									"key": "Content-Type",
 									"value": "application/json"
-								},
-								{
-									"key": "Content-Length",
-									"value": "200"
-								},
-								{
-									"key": "Connection",
-									"value": "keep-alive"
-								},
-								{
-									"key": "CF-Cache-Status",
-									"value": "DYNAMIC"
-								},
-								{
-									"key": "Expect-CT",
-									"value": "max-age=604800, report-uri=\"https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct\""
-								},
-								{
-									"key": "Report-To",
-									"value": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=B4NCh2Jz8ow6QOqIMN%2FYaPpkXoyYiY0QTVznONjgDk500aQ7ciGdPLxmlLeypMn%2B4n6pa9jZK2GqX9Zzm8H0DbUWxHbMBLvD38VKi9AC3BazqR%2Fz9fEIxmrgFS5UJyGiA9o91Vk%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}"
-								},
-								{
-									"key": "NEL",
-									"value": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}"
-								},
-								{
-									"key": "Server",
-									"value": "cloudflare"
-								},
-								{
-									"key": "CF-RAY",
-									"value": "6abf337eda21727c-HAM"
 								}
 							],
 							"cookie": [],
@@ -1394,7 +1150,7 @@
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
 								{
 									"key": "Content-Type",
@@ -1498,7 +1254,7 @@
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
 								{
 									"key": "Content-Type",
@@ -1553,7 +1309,7 @@
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
 								{
 									"key": "Content-Type",
@@ -1631,7 +1387,7 @@
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
 								{
 									"key": "Content-Type",
@@ -1674,7 +1430,7 @@
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
 								{
 									"key": "Content-Type",
@@ -1751,7 +1507,7 @@
 							},
 							"status": "OK",
 							"code": 200,
-							"_postman_previewlanguage": "Text",
+							"_postman_previewlanguage": "json",
 							"header": [
 								{
 									"key": "Content-Type",
