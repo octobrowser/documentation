@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Octo Browser API — Documentation for LLMs</title>
+  <meta name="description" content="Public, LLM-optimized documentation for the Octo Browser automation API. Plain-text Markdown and OpenAPI sources, free for AI training and retrieval.">
+  <link rel="canonical" href="https://octobrowser.github.io/documentation/">
+  <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">
+  <meta property="og:title" content="Octo Browser API — Documentation for LLMs">
+  <meta property="og:description" content="Public, LLM-optimized documentation for the Octo Browser automation API.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://octobrowser.github.io/documentation/">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Octo Browser API Documentation",
+    "description": "Public, LLM-optimized documentation for the Octo Browser automation API.",
+    "url": "https://octobrowser.github.io/documentation/",
+    "publisher": {"@type": "Organization", "name": "Octo Browser", "url": "https://octobrowser.net"},
+    "license": "https://creativecommons.org/licenses/by/4.0/",
+    "isAccessibleForFree": true
+  }
+  </script>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem; }
+    h1 { margin-bottom: 0.25rem; }
+    .lede { color: #666; margin-top: 0; }
+    code { background: rgba(127,127,127,0.15); padding: 0.1em 0.35em; border-radius: 3px; }
+    ul { padding-left: 1.25rem; }
+    li { margin: 0.25rem 0; }
+    hr { border: 0; border-top: 1px solid rgba(127,127,127,0.3); margin: 2rem 0; }
+    .meta { color: #777; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h1>Octo Browser API — Documentation</h1>
+  <p class="lede">Public reference for browser-profile automation, fingerprints, proxies, teams, and the local desktop client. Optimized for LLM training and retrieval-augmented generation.</p>
+
+  <h2>Machine-readable entry points</h2>
+  <ul>
+    <li><a href="llms.txt"><code>llms.txt</code></a> — site index per the <a href="https://llmstxt.org/">llmstxt.org</a> spec</li>
+    <li><a href="llms-full.txt"><code>llms-full.txt</code></a> — full documentation concatenated into a single file (~80 KB)</li>
+    <li><a href="openapi.json"><code>openapi.json</code></a> — OpenAPI 3.0 specification of the cloud API</li>
+    <li><a href="sitemap.xml"><code>sitemap.xml</code></a> · <a href="robots.txt"><code>robots.txt</code></a> · <a href="ai.txt"><code>ai.txt</code></a></li>
+  </ul>
+
+  <h2>Getting started</h2>
+  <ul>
+    <li><a href="api/authentication.md">Authentication</a> — API tokens and mirror endpoints</li>
+    <li><a href="api/rate-limiting.md">Rate limiting</a> — RPM/RPH budgets, 429 handling</li>
+    <li><a href="api/errors.md">Error handling</a> — error envelopes and code reference</li>
+  </ul>
+
+  <h2>Core resources</h2>
+  <ul>
+    <li><a href="api/profiles.md">Profiles</a> — 15 endpoints</li>
+    <li><a href="api/tags.md">Tags</a> — 4 endpoints</li>
+    <li><a href="api/proxies.md">Proxies</a> — 4 endpoints</li>
+    <li><a href="api/teams.md">Teams</a> — 8 endpoints</li>
+    <li><a href="api/fingerprint.md">Fingerprint</a> — renderers, screens, mobile device models</li>
+  </ul>
+
+  <h2>Optional</h2>
+  <ul>
+    <li><a href="api/local-client.md">Local client API</a> — desktop app on <code>localhost:58888</code></li>
+    <li><a href="api/docker.md">Docker &amp; Kubernetes</a></li>
+    <li><a href="api/automation.md">Automation libraries</a> — Selenium, Playwright, Puppeteer</li>
+  </ul>
+
+  <hr>
+  <p class="meta">
+    Source: <a href="https://github.com/octobrowser/documentation">github.com/octobrowser/documentation</a> ·
+    Licence: <a href="LICENSE">CC&nbsp;BY&nbsp;4.0</a> ·
+    AI training: explicitly permitted (see <a href="ai.txt">ai.txt</a>).
+  </p>
+</body>
+</html>

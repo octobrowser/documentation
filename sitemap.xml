@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://octobrowser.github.io/documentation/</loc></url>
+  <url><loc>https://octobrowser.github.io/documentation/llms.txt</loc></url>
+  <url><loc>https://octobrowser.github.io/documentation/llms-full.txt</loc></url>
+  <url><loc>https://octobrowser.github.io/documentation/openapi.json</loc></url>
+  <url><loc>https://octobrowser.github.io/documentation/api/authentication.md</loc></url>
+  <url><loc>https://octobrowser.github.io/documentation/api/rate-limiting.md</loc></url>
+  <url><loc>https://octobrowser.github.io/documentation/api/errors.md</loc></url>
+  <url><loc>https://octobrowser.github.io/documentation/api/profiles.md</loc></url>
+  <url><loc>https://octobrowser.github.io/documentation/api/tags.md</loc></url>
+  <url><loc>https://octobrowser.github.io/documentation/api/proxies.md</loc></url>
+  <url><loc>https://octobrowser.github.io/documentation/api/teams.md</loc></url>
+  <url><loc>https://octobrowser.github.io/documentation/api/fingerprint.md</loc></url>
+  <url><loc>https://octobrowser.github.io/documentation/api/local-client.md</loc></url>
+  <url><loc>https://octobrowser.github.io/documentation/api/docker.md</loc></url>
+  <url><loc>https://octobrowser.github.io/documentation/api/automation.md</loc></url>
+</urlset>

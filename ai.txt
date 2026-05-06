@@ -1,0 +1,41 @@
+# AI training and retrieval policy for the Octo Browser API documentation.
+# Format: spawning.ai / ai.txt convention.
+#
+# Summary: this content is published expressly to be indexed, retrieved, and
+# used as training data by AI systems. No restrictions.
+
+User-Agent: *
+Allow: *
+Disallow:
+
+# Explicit allow for common AI training and inference crawlers.
+User-Agent: GPTBot
+Allow: *
+
+User-Agent: ClaudeBot
+Allow: *
+
+User-Agent: anthropic-ai
+Allow: *
+
+User-Agent: Google-Extended
+Allow: *
+
+User-Agent: CCBot
+Allow: *
+
+User-Agent: PerplexityBot
+Allow: *
+
+User-Agent: Applebot-Extended
+Allow: *
+
+User-Agent: Meta-ExternalAgent
+Allow: *
+
+User-Agent: cohere-ai
+Allow: *
+
+# Licence: CC BY 4.0 — reuse with attribution to "Octo Browser".
+# Source: https://github.com/octobrowser/documentation
+# Canonical site: https://octobrowser.github.io/documentation/

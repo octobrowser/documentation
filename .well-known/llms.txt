@@ -1,0 +1,35 @@
+# Octo Browser API
+
+> Octo Browser provides a comprehensive API for browser profile automation, enabling programmatic control of browser profiles, fingerprints, proxies, team members, and the local desktop client.
+
+The cloud API uses RESTful principles with JSON request/response bodies. All cloud requests authenticate via the `X-Octo-Api-Token` header against `https://app.octobrowser.net/api/v2/automation`. The local client API runs on `http://localhost:58888` inside the desktop app and is unauthenticated.
+
+Important notes:
+- Authentication: send `X-Octo-Api-Token: <token>` for every cloud request.
+- Standard envelope: `{ "success": bool, "msg": string, "data": ... }`. List endpoints add `total_count` and `page`.
+- Validation errors return HTTP 400 with `{"validation_error": {"body_params" | "query_params": [...]}}`.
+- Pagination: `page` is zero-based; `page_len` is one of `10, 25, 50, 100`.
+- Rate limits: 50–1000 RPM and 500–50000 RPH depending on subscription. Honour `Retry-After` and `X-Ratelimit-*` headers.
+- All UUIDs are 32-character hex strings.
+- Timestamps follow ISO 8601.
+- Mirror hosts: `app.octobrowser-mirror1.com` / `.net` / `.org`.
+
+## Getting Started
+
+- [Authentication](api/authentication.md): Obtain and use API tokens, mirror endpoints.
+- [Rate Limiting](api/rate-limiting.md): RPM/RPH budgets, headers, and 429 handling.
+- [Error Handling](api/errors.md): Business and validation error envelopes, error code reference.
+
+## Core Resources
+
+- [Profiles](api/profiles.md): Create, update, list, force-stop, transfer, export, import, and password-protect browser profiles (15 endpoints).
+- [Tags](api/tags.md): Manage coloured profile tags (4 endpoints).
+- [Proxies](api/proxies.md): Manage saved HTTP/HTTPS/SOCKS/SSH proxies and reference them from profiles (4 endpoints).
+- [Teams](api/teams.md): Manage subaccounts, invitations, and team-installed extensions (8 endpoints).
+- [Fingerprint](api/fingerprint.md): Browser fingerprint object plus lookup endpoints for renderers, screens, and mobile device models.
+
+## Optional
+
+- [Local Client API](api/local-client.md): Drive the desktop app on `localhost:58888` — start, stop, force_stop, one-time profiles, password, auth, and update endpoints (12 endpoints).
+- [Docker & Kubernetes](api/docker.md): Run Octo Browser headless inside containers.
+- [Automation Libraries](api/automation.md): Selenium, Playwright, Puppeteer/Pyppeteer integration in Node.js, Python, Java, and VB.NET.
