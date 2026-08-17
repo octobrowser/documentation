@@ -24,6 +24,7 @@ Important notes:
 
 - [Profiles](api/profiles.md): Create, update, list, force-stop, transfer, export, import, and password-protect browser profiles (15 endpoints).
 - [Tags](api/tags.md): Manage coloured profile tags (4 endpoints).
+- [Folders](api/folders.md): Group profiles into folders, introduced in Octo Browser 3.0 (4 endpoints).
 - [Proxies](api/proxies.md): Manage saved HTTP/HTTPS/SOCKS/SSH proxies and reference them from profiles (4 endpoints).
 - [Teams](api/teams.md): Manage subaccounts, invitations, and team-installed extensions (8 endpoints).
 - [Fingerprint](api/fingerprint.md): Browser fingerprint object plus lookup endpoints for renderers, screens, and mobile device models.

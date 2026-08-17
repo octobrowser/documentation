@@ -4,6 +4,8 @@ The Local Client API runs inside the Octo Browser desktop app on `http://localho
 
 Each path below is rooted at `http://localhost:58888`. Responses are bare JSON objects and do **not** use the `{success, msg, data}` envelope of the cloud API.
 
+Although the local API is unauthenticated, profile start/stop/password operations are charged against the team's cloud RPM/RPH budget — see the point-cost table in [rate-limiting.md](rate-limiting.md).
+
 ## Prerequisites
 
 - Octo Browser desktop app installed and running.

@@ -119,6 +119,7 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/profiles/cfd673b04de3
 | `bookmarks`       | object[] | no       | Up to 100 `{name, url}` items. |
 | `tags`            | string[] | no       | Tag UUIDs to attach. |
 | `pinned_tag`      | string   | no       | Tag UUID rendered prominently in the UI. |
+| `folder`          | string   | no       | Folder to place the profile in (see [folders.md](folders.md)). Octo 3.0+. |
 | `password`        | string   | no       | Profile password (4–255 chars). |
 | `proxy`           | object   | no       | Inline proxy data **or** `{ "uuid": "<saved-proxy-uuid>" }`. |
 | `storage_options` | object   | no       | Toggles for cookies, passwords, extensions, localstorage, history, bookmarks, serviceworkers. |
@@ -500,6 +501,7 @@ Restore profiles from export blobs.
 
 **Request Body**:
 - `data` (string[], required) — array of export `data` strings.
+- `folder` (string, optional) — folder to place the imported profiles in (see [folders.md](folders.md)). Octo 3.0+.
 
 ```bash
 curl -X POST "https://app.octobrowser.net/api/v2/automation/profiles/import" \

@@ -12,13 +12,20 @@ The cloud API enforces a Requests-Per-Minute (RPM) and Requests-Per-Hour (RPH) b
 
 For limits beyond 1,000 RPM or 50,000 RPH, contact Octo Browser Technical Support.
 
-## Cost-Multiplier Endpoints
+## Point Costs of Local Client Operations
 
-Some endpoints cost more than one point per call. The costs are charged against both RPM and RPH counters:
+Local client API calls (`localhost:58888`) are charged against the same RPM/RPH budget as cloud calls:
 
-- `POST /api/profiles/one_time/start` (local client API) — counts as **4 requests**.
+| Local operation | Cost |
+|-----------------|------|
+| `POST /api/profiles/start` | 1 request |
+| `POST /api/profiles/stop` | 1 request |
+| `POST /api/profiles/password` (set) | 1 request |
+| `DELETE /api/profiles/password` | 1 request |
+| `POST /api/profiles/force_stop` | 2 requests |
+| `POST /api/profiles/one_time/start` | 4 requests |
 
-Other complex calls may also cost more than one point.
+The following local requests are **not counted** toward the limits: List Active Profiles (`GET /api/profiles/active`), Login, Logout, Get Client Version, Update Client, and Username.
 
 ## Rate Limit Headers
 
@@ -28,8 +35,8 @@ Every cloud API response carries:
 Retry-After: 0                  # seconds; 0 means you may send the next request now
 X-Ratelimit-Limit: 200          # current RPM limit
 X-Ratelimit-Limit-Hour: 3000    # current RPH limit
-X-Ratelimit-Remaining: 4        # remaining points this minute
-X-Ratelimit-Remaining-Hour: 2999 # remaining points this hour
+X-Ratelimit-Remaining: 196      # remaining points this minute
+X-Ratelimit-Remaining-Hour: 2996 # remaining points this hour
 X-Ratelimit-Reset: 1671789217   # unix timestamp when the minute window resets
 ```
 
@@ -58,4 +65,4 @@ def request_with_retry(method, url, headers, **kwargs):
 2. **Linear pacing beats bursts.** Spread heavy jobs evenly across the minute.
 3. **Cache lookups.** Don't call `GET /tags`, `GET /proxies`, or `GET /fingerprint/renderers` on every iteration.
 4. **One-time profiles cost 4×.** When scraping at volume, batch with saved profiles where possible.
-5. **Local client API has no rate limit** — drive `start`, `stop`, and `force_stop` against `localhost:58888` freely.
+5. **Local client calls count too.** Profile start/stop/password operations on `localhost:58888` draw from the same team budget (see the point-cost table above); only the read-only client endpoints are free.

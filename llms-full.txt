@@ -24,6 +24,7 @@ Important notes:
 
 - [Profiles](api/profiles.md): Create, update, list, force-stop, transfer, export, import, and password-protect browser profiles (15 endpoints).
 - [Tags](api/tags.md): Manage coloured profile tags (4 endpoints).
+- [Folders](api/folders.md): Group profiles into folders, introduced in Octo Browser 3.0 (4 endpoints).
 - [Proxies](api/proxies.md): Manage saved HTTP/HTTPS/SOCKS/SSH proxies and reference them from profiles (4 endpoints).
 - [Teams](api/teams.md): Manage subaccounts, invitations, and team-installed extensions (8 endpoints).
 - [Fingerprint](api/fingerprint.md): Browser fingerprint object plus lookup endpoints for renderers, screens, and mobile device models.
@@ -113,13 +114,20 @@ The cloud API enforces a Requests-Per-Minute (RPM) and Requests-Per-Hour (RPH) b
 
 For limits beyond 1,000 RPM or 50,000 RPH, contact Octo Browser Technical Support.
 
-## Cost-Multiplier Endpoints
+## Point Costs of Local Client Operations
 
-Some endpoints cost more than one point per call. The costs are charged against both RPM and RPH counters:
+Local client API calls (`localhost:58888`) are charged against the same RPM/RPH budget as cloud calls:
 
-- `POST /api/profiles/one_time/start` (local client API) — counts as **4 requests**.
+| Local operation | Cost |
+|-----------------|------|
+| `POST /api/profiles/start` | 1 request |
+| `POST /api/profiles/stop` | 1 request |
+| `POST /api/profiles/password` (set) | 1 request |
+| `DELETE /api/profiles/password` | 1 request |
+| `POST /api/profiles/force_stop` | 2 requests |
+| `POST /api/profiles/one_time/start` | 4 requests |
 
-Other complex calls may also cost more than one point.
+The following local requests are **not counted** toward the limits: List Active Profiles (`GET /api/profiles/active`), Login, Logout, Get Client Version, Update Client, and Username.
 
 ## Rate Limit Headers
 
@@ -129,8 +137,8 @@ Every cloud API response carries:
 Retry-After: 0                  # seconds; 0 means you may send the next request now
 X-Ratelimit-Limit: 200          # current RPM limit
 X-Ratelimit-Limit-Hour: 3000    # current RPH limit
-X-Ratelimit-Remaining: 4        # remaining points this minute
-X-Ratelimit-Remaining-Hour: 2999 # remaining points this hour
+X-Ratelimit-Remaining: 196      # remaining points this minute
+X-Ratelimit-Remaining-Hour: 2996 # remaining points this hour
 X-Ratelimit-Reset: 1671789217   # unix timestamp when the minute window resets
 ```
 
@@ -159,7 +167,7 @@ def request_with_retry(method, url, headers, **kwargs):
 2. **Linear pacing beats bursts.** Spread heavy jobs evenly across the minute.
 3. **Cache lookups.** Don't call `GET /tags`, `GET /proxies`, or `GET /fingerprint/renderers` on every iteration.
 4. **One-time profiles cost 4×.** When scraping at volume, batch with saved profiles where possible.
-5. **Local client API has no rate limit** — drive `start`, `stop`, and `force_stop` against `localhost:58888` freely.
+5. **Local client calls count too.** Profile start/stop/password operations on `localhost:58888` draw from the same team budget (see the point-cost table above); only the read-only client endpoints are free.
 
 ---
 
@@ -458,6 +466,7 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/profiles/cfd673b04de3
 | `bookmarks`       | object[] | no       | Up to 100 `{name, url}` items. |
 | `tags`            | string[] | no       | Tag UUIDs to attach. |
 | `pinned_tag`      | string   | no       | Tag UUID rendered prominently in the UI. |
+| `folder`          | string   | no       | Folder to place the profile in (see [folders.md](folders.md)). Octo 3.0+. |
 | `password`        | string   | no       | Profile password (4–255 chars). |
 | `proxy`           | object   | no       | Inline proxy data **or** `{ "uuid": "<saved-proxy-uuid>" }`. |
 | `storage_options` | object   | no       | Toggles for cookies, passwords, extensions, localstorage, history, bookmarks, serviceworkers. |
@@ -839,6 +848,7 @@ Restore profiles from export blobs.
 
 **Request Body**:
 - `data` (string[], required) — array of export `data` strings.
+- `folder` (string, optional) — folder to place the imported profiles in (see [folders.md](folders.md)). Octo 3.0+.
 
 ```bash
 curl -X POST "https://app.octobrowser.net/api/v2/automation/profiles/import" \
@@ -1065,6 +1075,171 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/profiles?page_len=10&
 - **409 Conflict** — tag name already exists on the account.
 
 See [errors.md](errors.md) for the standard error envelope and validation-error payload.
+
+---
+
+# File: api/folders.md
+
+# Folders API
+
+Folders group browser profiles for organisation and access control. They were introduced in Octo Browser 3.0 (July 2026) and are managed independently, then referenced from profile payloads via the `folder` field.
+
+All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": string | null }`.
+
+## Get Folders
+
+List every folder in the workspace. The response is not paginated.
+
+**Endpoint**: `GET /folders`
+
+```bash
+curl -X GET "https://app.octobrowser.net/api/v2/automation/folders" \
+  -H "X-Octo-Api-Token: YOUR_API_TOKEN"
+```
+
+### Example Response
+
+```json
+{
+  "success": true,
+  "msg": "",
+  "data": [
+    {
+      "uuid": "4d867ccd37224526ac2f6a65761c8614",
+      "name": "clients",
+      "assignable_wo_permission": false
+    }
+  ],
+  "code": null
+}
+```
+
+## Create Folders
+
+Creates one or more folders in a single request.
+
+**Endpoint**: `POST /folders`
+
+**Request Body**:
+- `folders` (array, required) — 1 to 100 folder objects, each with:
+  - `name` (string, required) — folder name, 1–20 characters.
+  - `assignable_wo_permission` (bool, optional) — whether profiles can be assigned to this folder without an explicit folder permission. Defaults to `false`.
+
+```bash
+curl -X POST "https://app.octobrowser.net/api/v2/automation/folders" \
+  -H "X-Octo-Api-Token: YOUR_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"folders":[{"name":"clients"}]}'
+```
+
+### Example Response
+
+`data` is an array of the created folders:
+
+```json
+{
+  "success": true,
+  "msg": "",
+  "data": [
+    {
+      "uuid": "4d867ccd37224526ac2f6a65761c8614",
+      "name": "clients",
+      "assignable_wo_permission": false
+    }
+  ],
+  "code": null
+}
+```
+
+## Update Folder
+
+**Endpoint**: `PATCH /folders/{folder}`
+
+The `{folder}` path parameter accepts either the folder UUID or the folder name. Both body fields are optional; supply only what you want to change:
+- `name` (string, optional) — new name, 1–20 characters.
+- `assignable_wo_permission` (bool, optional).
+
+```bash
+curl -X PATCH "https://app.octobrowser.net/api/v2/automation/folders/4d867ccd37224526ac2f6a65761c8614" \
+  -H "X-Octo-Api-Token: YOUR_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"clients-eu","assignable_wo_permission":true}'
+```
+
+### Example Response
+
+`data` is the updated folder object:
+
+```json
+{
+  "success": true,
+  "msg": "",
+  "data": {
+    "uuid": "4d867ccd37224526ac2f6a65761c8614",
+    "name": "clients-eu",
+    "assignable_wo_permission": true
+  },
+  "code": null
+}
+```
+
+## Remove Folder
+
+**Endpoint**: `DELETE /folders/{folder}`
+
+The `{folder}` path parameter accepts either the folder UUID or the folder name.
+
+```bash
+curl -X DELETE "https://app.octobrowser.net/api/v2/automation/folders/clients-eu" \
+  -H "X-Octo-Api-Token: YOUR_API_TOKEN"
+```
+
+### Example Response
+
+```json
+{
+  "success": true,
+  "msg": "",
+  "data": null,
+  "code": null
+}
+```
+
+## Using Folders with Profiles
+
+Profile payloads accept an optional `folder` field (string) on `POST /profiles`, `PATCH /profiles/{uuid}`, and `POST /profiles/import` to place the profile into a folder.
+
+## Common Errors
+
+- **400 Bad Request** — validation failure, e.g. a name longer than 20 characters:
+
+  ```json
+  {
+    "validation_error": {
+      "body_params": [
+        {
+          "type": "string_too_long",
+          "loc": ["name"],
+          "msg": "String should have at most 20 characters",
+          "input": "a-folder-name-that-is-too-long"
+        }
+      ]
+    }
+  }
+  ```
+
+- **404 Not Found** — folder UUID or name does not exist:
+
+  ```json
+  {
+    "success": false,
+    "msg": "Folder not found",
+    "data": "",
+    "code": "not_found"
+  }
+  ```
+
+See [errors.md](errors.md) for the standard error envelope.
 
 ---
 
@@ -1827,6 +2002,8 @@ Each counter accepts integers 0–5.
 The Local Client API runs inside the Octo Browser desktop app on `http://localhost:58888`. It does not require an `X-Octo-Api-Token` header — authentication is implicit via the running session of the desktop app.
 
 Each path below is rooted at `http://localhost:58888`. Responses are bare JSON objects and do **not** use the `{success, msg, data}` envelope of the cloud API.
+
+Although the local API is unauthenticated, profile start/stop/password operations are charged against the team's cloud RPM/RPH budget — see the point-cost table in [rate-limiting.md](rate-limiting.md).
 
 ## Prerequisites
 
