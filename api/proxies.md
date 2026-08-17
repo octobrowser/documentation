@@ -2,7 +2,7 @@
 
 Manage saved proxies. A proxy is a reusable record that can be referenced by UUID from a profile, or supplied inline on a profile payload.
 
-All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ... }`.
+All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": string | null }`.
 
 ## Get Proxies
 

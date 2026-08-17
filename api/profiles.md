@@ -2,7 +2,7 @@
 
 Browser profiles bundle a fingerprint, an optional proxy, browser storage settings and metadata. Profiles are identified by 32-character hex `uuid` strings.
 
-All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": null }`. List endpoints additionally return `total_count` and `page`.
+All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": string | null }`. List endpoints additionally return `total_count` and `page`.
 
 ## Get Profiles
 
@@ -12,12 +12,12 @@ All endpoints return the standard envelope `{ "success": bool, "msg": string, "d
 
 | Param         | Type    | Notes |
 |---------------|---------|-------|
-| `page_len`    | int     | Page size; one of `10, 25, 50, 100`. |
-| `page`        | int     | Zero-based page number. |
+| `page_len`    | int     | Page size; one of `10, 25, 50, 100`. Default `10`. |
+| `page`        | int     | Zero-based page number. Default `0`. |
 | `fields`      | string  | Comma-separated list of fields to include in each item. Allowed: `title`, `description`, `proxy`, `start_pages`, `tags`, `status`, `last_active`, `version`, `storage_options`, `created_at`, `updated_at`, `has_user_password`, `pinned_tag`, `launch_args`, `images_load_limit`, `local_cache`, `extra_info`. Without this parameter only `uuid` is returned. |
 | `ordering`    | string  | One of `created`, `-created`, `active`, `-active`, `title`, `-title`. |
 | `search`      | string  | Filter profiles whose title starts with the given string. |
-| `search_tags` | string  | Comma-separated list of tag UUIDs. A profile is returned only when it has **all** of the listed tags. |
+| `search_tags` | string  | Comma-separated list of tag **names**. A profile is returned only when it has **all** of the listed tags. |
 | `status`      | int     | Filter by status code. |
 | `password`    | bool    | `true` returns only profiles with passwords; `false` returns only profiles without; omit for all. |
 | `proxies`     | string  | Comma-separated list of proxy UUIDs, or the special token `@no-proxies-filter` to return only profiles without a proxy. |
@@ -117,8 +117,8 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/profiles/cfd673b04de3
 | `description`     | string   | no       | Up to 1024 characters. |
 | `start_pages`     | string[] | no       | Up to 20 URLs (each ≤ 2048 chars). |
 | `bookmarks`       | object[] | no       | Up to 100 `{name, url}` items. |
-| `tags`            | string[] | no       | Tag UUIDs to attach. |
-| `pinned_tag`      | string   | no       | Tag UUID rendered prominently in the UI. |
+| `tags`            | string[] | no       | Tag **names** to attach (each 1–20 chars). Tags are referenced by name here, not by UUID. |
+| `pinned_tag`      | string   | no       | Tag **name** rendered prominently in the UI. |
 | `folder`          | string   | no       | Folder to place the profile in (see [folders.md](folders.md)). Octo 3.0+. |
 | `password`        | string   | no       | Profile password (4–255 chars). |
 | `proxy`           | object   | no       | Inline proxy data **or** `{ "uuid": "<saved-proxy-uuid>" }`. |
@@ -139,8 +139,8 @@ curl -X POST "https://app.octobrowser.net/api/v2/automation/profiles" \
     "title": "Test profile from api",
     "description": "test description",
     "start_pages": ["https://fb.com"],
-    "tags": ["7891009afee84952a926b03e7bc0af52"],
-    "pinned_tag": "7891009afee84952a926b03e7bc0af52",
+    "tags": ["octo"],
+    "pinned_tag": "octo",
     "launch_args": ["--start-maximized"],
     "proxy": {
       "type": "socks5",
@@ -240,7 +240,7 @@ chrome.cookies.getOctoProfileExtraInfo((extraInfo) => {
 
 **Endpoint**: `PATCH /profiles/{uuid}`
 
-All fields are optional. The body shape matches `POST /profiles`. The full `fingerprint` object is replaced when provided — sub-fields are not deep-merged.
+All fields are optional. The body shape matches `POST /profiles`, except that `password` is not accepted here — use [`POST /profiles/set_password`](#set-profiles-password) instead. The full `fingerprint` object is replaced when provided — sub-fields are not deep-merged.
 
 > Updating running profiles works, but for synchronisation safety prefer to update stopped profiles.
 
@@ -251,7 +251,7 @@ curl -X PATCH "https://app.octobrowser.net/api/v2/automation/profiles/d9623a2be9
   -d '{
     "title": "new title",
     "description": "new description",
-    "tags": ["7891009afee84952a926b03e7bc0af52"],
+    "tags": ["octo"],
     "fingerprint": { "os": "win", "os_version": "11", "screen": "1920x1080" }
   }'
 ```
@@ -301,7 +301,7 @@ curl -X DELETE "https://app.octobrowser.net/api/v2/automation/profiles" \
 
 **Endpoint**: `POST /profiles/{uuid}/import_cookies`
 
-**Request Body**: `{ "cookies": <array or string> }` — accepts the same JSON, Mozilla and Netscape formats described under [Create Profile](#cookie-formats). Cookies can also be uploaded as `multipart/form-data` under the `cookies` field.
+**Request Body**: `{ "cookies": <array or string> }` — accepts the same JSON, Mozilla and Netscape formats described under [Cookie Formats](#cookie-formats). Cookies can also be uploaded as `multipart/form-data` under the `cookies` field.
 
 ```bash
 curl -X POST "https://app.octobrowser.net/api/v2/automation/profiles/d9623a2be9a0431784aacc4500d7963a/import_cookies" \
@@ -323,13 +323,13 @@ Forcibly stops a running profile.
 **Endpoint**: `POST /profiles/{uuid}/force_stop`
 
 **Request Body**:
-- `version` (int, optional) — profile version for an optimistic concurrency check. Pass `null` (or omit) when you do not track versions.
+- `version` (int | null, required) — profile version for an optimistic concurrency check. The field must be present; pass `null` when you do not track versions. Omitting it entirely returns a `400` validation error (`Field required`).
 
 ```bash
 curl -X POST "https://app.octobrowser.net/api/v2/automation/profiles/d9623a2be9a0431784aacc4500d7963a/force_stop" \
   -H "X-Octo-Api-Token: YOUR_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{"version": null}'
 ```
 
 ### Example Response

@@ -6,12 +6,13 @@ The cloud API uses RESTful principles with JSON request/response bodies. All clo
 
 Important notes:
 - Authentication: send `X-Octo-Api-Token: <token>` for every cloud request.
-- Standard envelope: `{ "success": bool, "msg": string, "data": ... }`. List endpoints add `total_count` and `page`.
+- Standard envelope: `{ "success": bool, "msg": string, "data": ..., "code": string | null }`. Paginated listings (profiles, fingerprint renderers) add `total_count` and `page`; teams subaccounts/invites add only `total_count`; other listings return a bare `data` array.
 - Validation errors return HTTP 400 with `{"validation_error": {"body_params" | "query_params": [...]}}`.
 - Pagination: `page` is zero-based; `page_len` is one of `10, 25, 50, 100`.
-- Rate limits: 50–1000 RPM and 500–50000 RPH depending on subscription. Honour `Retry-After` and `X-Ratelimit-*` headers.
-- All UUIDs are 32-character hex strings.
+- Rate limits: 50–1000 RPM and 500–50000 RPH depending on subscription, shared with local-client profile operations. Honour `Retry-After` and `X-Ratelimit-*` headers.
+- Resource UUIDs are 32-character hex strings; team extension IDs use `<extension-id>@<version>`; tags and folders are referenced by name in profile payloads.
 - Timestamps follow ISO 8601.
+- Machine-readable spec: [openapi.json](openapi.json) (OpenAPI 3.0, covers the cloud API including endpoints absent from the official spec).
 - Mirror hosts: `app.octobrowser-mirror1.com` / `.net` / `.org`.
 
 ## Getting Started
@@ -27,7 +28,7 @@ Important notes:
 - [Folders](api/folders.md): Group profiles into folders, introduced in Octo Browser 3.0 (4 endpoints).
 - [Proxies](api/proxies.md): Manage saved HTTP/HTTPS/SOCKS/SSH proxies and reference them from profiles (4 endpoints).
 - [Teams](api/teams.md): Manage subaccounts, invitations, and team-installed extensions (8 endpoints).
-- [Fingerprint](api/fingerprint.md): Browser fingerprint object plus lookup endpoints for renderers, screens, and mobile device models.
+- [Fingerprint](api/fingerprint.md): Browser fingerprint object plus lookup endpoints for renderers, screens, and mobile device models (3 endpoints).
 
 ## Optional
 
@@ -242,12 +243,14 @@ When you receive a 400, look for `validation_error` first. If it is missing, par
 | Code | Meaning |
 |------|---------|
 | 200  | OK |
+| 201  | Created — returned by `POST /profiles` and `POST /tags`. |
+| 207  | Multi-Status — declared by the OpenAPI spec for `POST /profiles/import` partial results. |
 | 400  | Bad request — body or query failed validation, or a domain rule rejected the call. |
 | 401  | Invalid or missing `X-Octo-Api-Token`. |
 | 403  | The token is valid but the subaccount lacks the required permission, or a quota was reached. |
 | 404  | Resource (profile, tag, proxy, subaccount, …) does not exist. |
 | 409  | Conflict — resource is locked, running, or in a state that forbids the operation. |
-| 422  | Less common variant of 400 returned by some FastAPI validators. The body is `{ "detail": [{ "loc": [...], "msg": "...", "type": "..." }] }`. |
+| 422  | Declared as the validation response throughout the official OpenAPI spec, but in practice the API returns validation failures as `400` with the `validation_error` envelope above. Treat a 422 body of `{ "detail": [{ "loc": [...], "msg": "...", "type": "..." }] }` as a rare fallback. |
 | 429  | Rate limit exceeded; see [rate-limiting.md](rate-limiting.md). |
 | 5xx  | Server-side issue. Retry with exponential backoff. |
 
@@ -265,6 +268,8 @@ The `code` field on the business error envelope. Codes prefixed with a domain (`
 | `limit_reached`     | Resource limit reached on the current subscription. |
 | `already_exists`    | Conflict — a record with the same key already exists. |
 | `internal_error`    | Server-side fault. Retry. |
+| `unknown_error`     | Unclassified failure (from the OpenAPI spec's `ErrorCode` enum). |
+| `no_tokens`         | No API token exists for the workspace (from the OpenAPI spec's `ErrorCode` enum). |
 | `rate_limit_exceeded` | RPM/RPH bucket empty. See [rate-limiting.md](rate-limiting.md). |
 
 ### Profiles
@@ -292,6 +297,7 @@ The `code` field on the business error envelope. Codes prefixed with a domain (`
 | Code | Meaning |
 |------|---------|
 | `fingerprints.invalid`            | Fingerprint object failed server-side validation. |
+| `fingerprints.invalid_mobile_model` | `device_model` is unknown, or the chosen `os_version` is not in that model's `os_versions` list. |
 | `subscriptions.inactive`          | Workspace has no active subscription. |
 | `proxy_providers.empty_balance`   | Built-in proxy provider has no balance. |
 | `proxy.maximum_saved_error`       | Proxy quota reached on the subscription. |
@@ -349,7 +355,7 @@ def call(method, url, headers, max_retries=3, **kwargs):
 
 Browser profiles bundle a fingerprint, an optional proxy, browser storage settings and metadata. Profiles are identified by 32-character hex `uuid` strings.
 
-All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": null }`. List endpoints additionally return `total_count` and `page`.
+All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": string | null }`. List endpoints additionally return `total_count` and `page`.
 
 ## Get Profiles
 
@@ -359,12 +365,12 @@ All endpoints return the standard envelope `{ "success": bool, "msg": string, "d
 
 | Param         | Type    | Notes |
 |---------------|---------|-------|
-| `page_len`    | int     | Page size; one of `10, 25, 50, 100`. |
-| `page`        | int     | Zero-based page number. |
+| `page_len`    | int     | Page size; one of `10, 25, 50, 100`. Default `10`. |
+| `page`        | int     | Zero-based page number. Default `0`. |
 | `fields`      | string  | Comma-separated list of fields to include in each item. Allowed: `title`, `description`, `proxy`, `start_pages`, `tags`, `status`, `last_active`, `version`, `storage_options`, `created_at`, `updated_at`, `has_user_password`, `pinned_tag`, `launch_args`, `images_load_limit`, `local_cache`, `extra_info`. Without this parameter only `uuid` is returned. |
 | `ordering`    | string  | One of `created`, `-created`, `active`, `-active`, `title`, `-title`. |
 | `search`      | string  | Filter profiles whose title starts with the given string. |
-| `search_tags` | string  | Comma-separated list of tag UUIDs. A profile is returned only when it has **all** of the listed tags. |
+| `search_tags` | string  | Comma-separated list of tag **names**. A profile is returned only when it has **all** of the listed tags. |
 | `status`      | int     | Filter by status code. |
 | `password`    | bool    | `true` returns only profiles with passwords; `false` returns only profiles without; omit for all. |
 | `proxies`     | string  | Comma-separated list of proxy UUIDs, or the special token `@no-proxies-filter` to return only profiles without a proxy. |
@@ -464,8 +470,8 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/profiles/cfd673b04de3
 | `description`     | string   | no       | Up to 1024 characters. |
 | `start_pages`     | string[] | no       | Up to 20 URLs (each ≤ 2048 chars). |
 | `bookmarks`       | object[] | no       | Up to 100 `{name, url}` items. |
-| `tags`            | string[] | no       | Tag UUIDs to attach. |
-| `pinned_tag`      | string   | no       | Tag UUID rendered prominently in the UI. |
+| `tags`            | string[] | no       | Tag **names** to attach (each 1–20 chars). Tags are referenced by name here, not by UUID. |
+| `pinned_tag`      | string   | no       | Tag **name** rendered prominently in the UI. |
 | `folder`          | string   | no       | Folder to place the profile in (see [folders.md](folders.md)). Octo 3.0+. |
 | `password`        | string   | no       | Profile password (4–255 chars). |
 | `proxy`           | object   | no       | Inline proxy data **or** `{ "uuid": "<saved-proxy-uuid>" }`. |
@@ -486,8 +492,8 @@ curl -X POST "https://app.octobrowser.net/api/v2/automation/profiles" \
     "title": "Test profile from api",
     "description": "test description",
     "start_pages": ["https://fb.com"],
-    "tags": ["7891009afee84952a926b03e7bc0af52"],
-    "pinned_tag": "7891009afee84952a926b03e7bc0af52",
+    "tags": ["octo"],
+    "pinned_tag": "octo",
     "launch_args": ["--start-maximized"],
     "proxy": {
       "type": "socks5",
@@ -587,7 +593,7 @@ chrome.cookies.getOctoProfileExtraInfo((extraInfo) => {
 
 **Endpoint**: `PATCH /profiles/{uuid}`
 
-All fields are optional. The body shape matches `POST /profiles`. The full `fingerprint` object is replaced when provided — sub-fields are not deep-merged.
+All fields are optional. The body shape matches `POST /profiles`, except that `password` is not accepted here — use [`POST /profiles/set_password`](#set-profiles-password) instead. The full `fingerprint` object is replaced when provided — sub-fields are not deep-merged.
 
 > Updating running profiles works, but for synchronisation safety prefer to update stopped profiles.
 
@@ -598,7 +604,7 @@ curl -X PATCH "https://app.octobrowser.net/api/v2/automation/profiles/d9623a2be9
   -d '{
     "title": "new title",
     "description": "new description",
-    "tags": ["7891009afee84952a926b03e7bc0af52"],
+    "tags": ["octo"],
     "fingerprint": { "os": "win", "os_version": "11", "screen": "1920x1080" }
   }'
 ```
@@ -648,7 +654,7 @@ curl -X DELETE "https://app.octobrowser.net/api/v2/automation/profiles" \
 
 **Endpoint**: `POST /profiles/{uuid}/import_cookies`
 
-**Request Body**: `{ "cookies": <array or string> }` — accepts the same JSON, Mozilla and Netscape formats described under [Create Profile](#cookie-formats). Cookies can also be uploaded as `multipart/form-data` under the `cookies` field.
+**Request Body**: `{ "cookies": <array or string> }` — accepts the same JSON, Mozilla and Netscape formats described under [Cookie Formats](#cookie-formats). Cookies can also be uploaded as `multipart/form-data` under the `cookies` field.
 
 ```bash
 curl -X POST "https://app.octobrowser.net/api/v2/automation/profiles/d9623a2be9a0431784aacc4500d7963a/import_cookies" \
@@ -670,13 +676,13 @@ Forcibly stops a running profile.
 **Endpoint**: `POST /profiles/{uuid}/force_stop`
 
 **Request Body**:
-- `version` (int, optional) — profile version for an optimistic concurrency check. Pass `null` (or omit) when you do not track versions.
+- `version` (int | null, required) — profile version for an optimistic concurrency check. The field must be present; pass `null` when you do not track versions. Omitting it entirely returns a `400` validation error (`Field required`).
 
 ```bash
 curl -X POST "https://app.octobrowser.net/api/v2/automation/profiles/d9623a2be9a0431784aacc4500d7963a/force_stop" \
   -H "X-Octo-Api-Token: YOUR_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{}'
+  -d '{"version": null}'
 ```
 
 ### Example Response
@@ -928,7 +934,7 @@ curl -X POST "https://app.octobrowser.net/api/v2/automation/profiles/21d471786f4
 
 Tags are coloured labels attached to browser profiles. They are managed independently and referenced by UUID from profile payloads.
 
-All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ... }`.
+All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": string | null }`.
 
 ## Get Tags
 
@@ -976,8 +982,10 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/tags" \
 
 **Endpoint**: `POST /tags`
 
+Returns HTTP `201 Created`.
+
 **Request Body**:
-- `name` (string, required) — tag name.
+- `name` (string, required) — tag name, 1–20 characters.
 - `color` (string, optional) — one of: `grey`, `blue`, `cyan`, `orange`, `green`, `purple`, `red`, `yellow`. Defaults to `grey`. Hex colours are not accepted.
 
 ```bash
@@ -1043,28 +1051,28 @@ curl -X DELETE "https://app.octobrowser.net/api/v2/automation/tags/ab003313e6904
 {
   "success": true,
   "msg": "",
-  "data": ""
+  "data": null
 }
 ```
 
 ## Using Tags with Profiles
 
-Profile payloads accept tags by UUID. The `tags` field on a profile is an array of tag UUIDs:
+Profile payloads reference tags **by name** (not by UUID — the UUIDs above are only used for `PATCH /tags/{uuid}` and `DELETE /tags/{uuid}`). The `tags` field on a profile is an array of tag names, and `pinned_tag` is a single tag name:
 
 ```json
 {
   "title": "My Profile",
-  "tags": ["3524ff6e3f0245ffbbcb5ea3d0446a8e", "ab1391ce01aa46fcbdd9d02a4569bec4"],
+  "tags": ["facebook", "google"],
   "fingerprint": { "os": "win" }
 }
 ```
 
 ### Search Profiles by Tags
 
-`GET /profiles` accepts `search_tags`, a comma-separated list of tag UUIDs. A profile is returned only when it has **all** listed tags (logical AND, not OR).
+`GET /profiles` accepts `search_tags`, a comma-separated list of tag **names**. A profile is returned only when it has **all** listed tags (logical AND, not OR).
 
 ```bash
-curl -X GET "https://app.octobrowser.net/api/v2/automation/profiles?page_len=10&page=0&search_tags=3524ff6e3f0245ffbbcb5ea3d0446a8e,ab1391ce01aa46fcbdd9d02a4569bec4" \
+curl -X GET "https://app.octobrowser.net/api/v2/automation/profiles?page_len=10&page=0&search_tags=facebook,google" \
   -H "X-Octo-Api-Token: YOUR_API_TOKEN"
 ```
 
@@ -1249,7 +1257,7 @@ See [errors.md](errors.md) for the standard error envelope.
 
 Manage saved proxies. A proxy is a reusable record that can be referenced by UUID from a profile, or supplied inline on a profile payload.
 
-All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ... }`.
+All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": string | null }`.
 
 ## Get Proxies
 
@@ -1459,7 +1467,7 @@ See [errors.md](errors.md) for the standard error envelope.
 
 Manage team-wide resources: shared browser extensions, team members (subaccounts), and pending invitations.
 
-All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ... }`. Listing endpoints additionally return `total_count`.
+All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": string | null }`. The subaccounts and invites listings additionally return `total_count`; the extensions listing does not.
 
 > Team features require a team or enterprise subscription.
 
@@ -1543,7 +1551,7 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" \
       "uuid": "54d6ff5042c545b990349a7a7e653e81",
       "email": "test@octo.com",
       "master": false,
-      "created_at": "2023-11-27 13:07:28",
+      "created_at": "2023-11-27T13:07:28",
       "permissions": {
         "manage_team": false,
         "edit_tags": false,
@@ -1555,7 +1563,11 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" \
         "templates":    { "create": false, "edit": false, "delete": false },
         "extensions":   { "delete": false },
         "tasks":        { "view": false, "manage": false },
-        "visible_tags": ["tag_name"]
+        "visible_tags": ["tag_name"],
+        "view_all_folders": false,
+        "visible_folders": [],
+        "edit_folders": false,
+        "view_profiles_wo_folders": false
       }
     }
   ]
@@ -1591,7 +1603,11 @@ curl -X POST "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" \
       "templates":    { "create": false, "edit": false, "delete": false },
       "extensions":   { "delete": false },
       "tasks":        { "view": false, "manage": false },
-      "visible_tags": ["tag_name"]
+      "visible_tags": ["tag_name"],
+      "view_all_folders": false,
+      "visible_folders": [],
+      "edit_folders": false,
+      "view_profiles_wo_folders": false
     }
   }'
 ```
@@ -1627,7 +1643,11 @@ curl -X PATCH "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" 
       "templates":    { "create": true, "edit": true, "delete": true },
       "extensions":   { "delete": true },
       "tasks":        { "view": true, "manage": true },
-      "visible_tags": []
+      "visible_tags": [],
+      "view_all_folders": true,
+      "visible_folders": [],
+      "edit_folders": true,
+      "view_profiles_wo_folders": true
     }
   }'
 ```
@@ -1683,7 +1703,7 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/invites" \
   "msg": "",
   "total_count": 1,
   "data": [
-    { "receiver": "test_receiver@octo.net", "created_at": "2023-11-27 13:07:28" }
+    { "receiver": "test_receiver@octo.net", "created_at": "2023-11-27T13:07:28" }
   ]
 }
 ```
@@ -1720,6 +1740,9 @@ Top-level boolean flags:
 | `edit_tags`         | Create, rename, recolour, and delete tags. |
 | `view_all_tags`     | See every tag on the workspace; otherwise the subaccount only sees tags listed in `visible_tags`. |
 | `manage_action_log` | Access and manage the team's action log. |
+| `edit_folders`      | Create, rename, and delete folders (Octo 3.0+). |
+| `view_all_folders`  | See every folder on the workspace; otherwise the subaccount only sees folders listed in `visible_folders`. |
+| `view_profiles_wo_folders` | See profiles that are not assigned to any folder. |
 
 Nested permission groups:
 
@@ -1732,7 +1755,7 @@ Nested permission groups:
 | `extensions`    | `delete` |
 | `tasks`         | `view`, `manage` |
 
-`visible_tags` is an array of tag names — when `view_all_tags` is `false`, the subaccount can see only profiles tagged with at least one of these tag names.
+`visible_tags` is an array of tag names — when `view_all_tags` is `false`, the subaccount can see only profiles tagged with at least one of these tag names. `visible_folders` works the same way for folders when `view_all_folders` is `false` (Octo 3.0+).
 
 ## Common Errors
 
@@ -1749,7 +1772,7 @@ Nested permission groups:
 
 The `fingerprint` object on a profile controls every detectable browser characteristic. Three lookup endpoints expose the values accepted by that object.
 
-All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ... }`. The renderers endpoint also returns `total_count` and `page` for pagination.
+All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": string | null }`. The renderers endpoint also returns `total_count` and `page` for pagination; screens and device models return a bare `data` array.
 
 ## Fingerprint Object
 
@@ -1759,9 +1782,9 @@ The `fingerprint` field is required on profile creation. Only `os` is mandatory 
 
 | Field         | Type    | Notes |
 |---------------|---------|-------|
-| `os`          | enum    | `win`, `mac`, `lin`, `android`. Required. |
+| `os`          | enum    | `win`, `mac`, `android`. Required. |
 | `os_arch`     | string  | `x86` or `arm`. Defaults depend on `os`. |
-| `os_version`  | string  | E.g. `10`, `11` for Windows; `13`, `14`, `15` for Android. |
+| `os_version`  | string  | E.g. `10`, `11` for Windows; `12`–`15` for Android (model-dependent — use only versions listed in `os_versions` for the chosen `device_model`, otherwise the API returns `fingerprints.invalid_mobile_model`). |
 | `user_agent`  | string  | Up to 255 chars. |
 | `screen`      | string  | E.g. `1920x1080`. Pick from `GET /fingerprint/screens`. |
 | `cpu`         | int     | One of `2, 4, 6, 8, 10, 11, 12, 14, 16, 20, 24`. |
@@ -1792,7 +1815,7 @@ List WebGL renderer strings filtered by OS and architecture. Paginated.
 **Endpoint**: `GET /fingerprint/renderers`
 
 **Query Parameters**:
-- `os` (string, optional) — `win`, `mac`, `lin`, `android`.
+- `os` (string, optional) — `win`, `mac`, or `android`. Defaults to `win`.
 - `os_arch` (string, optional) — `x86` or `arm`.
 - `page_len` (int, optional) — page size; one of `10, 25, 50, 100`.
 - `page` (int, optional) — zero-based page number.
@@ -1826,7 +1849,7 @@ List screen resolutions for the requested platform.
 **Endpoint**: `GET /fingerprint/screens`
 
 **Query Parameters**:
-- `os` (string, optional) — `win`, `mac`, `lin`, `android`.
+- `os` (string, optional) — `win`, `mac`, or `android`. Defaults to `win`.
 - `os_arch` (string, optional) — `x86` or `arm`.
 
 ```bash
@@ -1855,7 +1878,9 @@ List Android device models that can be used for mobile fingerprints.
 **Endpoint**: `GET /fingerprint/device_models`
 
 **Query Parameters**:
-- `device_type` (string, required) — `phone` or `tablet`.
+- `device_type` (string, optional) — `phone` or `tablet`.
+
+The response is not paginated — all models (800+) are returned in one call, so cache it client-side.
 
 ```bash
 curl -X GET "https://app.octobrowser.net/api/v2/automation/fingerprint/device_models?device_type=phone" \
@@ -1953,10 +1978,10 @@ Each counter accepts integers 0–5.
 {
   "os": "android",
   "os_arch": "arm",
-  "os_version": "15",
+  "os_version": "13",
   "device_type": "phone",
-  "device_model": "SM-S911U",
-  "user_agent": "Mozilla/5.0 (Linux; Android 15; SM-S911U) AppleWebKit/537.36 Mobile Safari/537.36",
+  "device_model": "M2102J20SG",
+  "user_agent": "Mozilla/5.0 (Linux; Android 13; M2102J20SG) AppleWebKit/537.36 Mobile Safari/537.36",
   "languages": { "type": "ip", "data": null },
   "timezone": { "type": "ip", "data": null },
   "geolocation": { "type": "ip", "data": null },
@@ -1991,7 +2016,7 @@ Each counter accepts integers 0–5.
 - Use values from `/fingerprint/renderers`, `/fingerprint/screens`, and `/fingerprint/device_models` rather than guessing — invalid values are rejected.
 - Keep `user_agent` consistent with `os` and `os_version`.
 - Match `timezone`/`geolocation` to your proxy's location when realism matters.
-- For mobile profiles, always pair `device_type` with a `device_model` from the lookup endpoint.
+- For mobile profiles, always pair `device_type` with a `device_model` from the lookup endpoint, and pick `os_version` from that model's `os_versions` list — a version the model does not support is rejected with `fingerprints.invalid_mobile_model`.
 
 ---
 
@@ -2511,7 +2536,7 @@ Key points:
 Drive Octo Browser profiles from Selenium, Playwright, Puppeteer, and similar Chromium-automation frameworks. The pattern is the same in every language:
 
 1. Use the **cloud API** (`https://app.octobrowser.net/api/v2/automation`) to manage profiles.
-2. Use the **local client API** (`http://127.0.0.1:58888`) to start a profile with `debug_port: true`.
+2. Use the **local client API** (`http://localhost:58888`) to start a profile with `debug_port: true`.
 3. Connect your automation library to the returned `ws_endpoint` (CDP WebSocket) or `debug_port`.
 
 ## Prerequisites
@@ -2537,7 +2562,7 @@ const OCTO_REMOTE_API = axios.create({
 });
 
 const OCTO_LOCAL_API = axios.create({
-  baseURL: 'http://127.0.0.1:58888/api/profiles/',
+  baseURL: 'http://localhost:58888/api/profiles/',
   timeout: 100000,
 });
 
@@ -2628,7 +2653,7 @@ const OCTO_REMOTE_API = axios.create({
 });
 
 const OCTO_LOCAL_API = axios.create({
-  baseURL: 'http://127.0.0.1:58888/api/profiles/',
+  baseURL: 'http://localhost:58888/api/profiles/',
   timeout: 100000,
 });
 
@@ -2671,7 +2696,7 @@ PROFILE_UUID = "UUID_OF_YOUR_PROFILE"
 def main():
     with sync_playwright() as p:
         start_response = httpx.post(
-            'http://127.0.0.1:58888/api/profiles/start',
+            'http://localhost:58888/api/profiles/start',
             json={'uuid': PROFILE_UUID, 'headless': False, 'debug_port': True},
         )
         if not start_response.is_success:
@@ -2702,7 +2727,7 @@ async def main():
     async with async_playwright() as p:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                'http://127.0.0.1:58888/api/profiles/start',
+                'http://localhost:58888/api/profiles/start',
                 json={'uuid': PROFILE_UUID, 'headless': False, 'debug_port': True},
             )
             if not response.is_success:
@@ -2775,7 +2800,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
 public class Main {
     private static final String PROFILE_ID = "PROFILE_UUID";
     private static final String CHROME_DRIVER = "./path/to/chromedriver.exe";
-    private static final String LOCAL_API = "http://127.0.0.1:58888/api/profiles";
+    private static final String LOCAL_API = "http://localhost:58888/api/profiles";
 
     public static void main(String[] args) throws Exception {
         int port = getDebugPort(PROFILE_ID);
@@ -2823,7 +2848,7 @@ Module Program
     Public Class Main
         Private Shared ReadOnly PROFILE_ID As String = "PROFILE_UUID_SHOULD_BE_HERE"
         Private Shared ReadOnly CHROME_DRIVER As String = "./chromedriver-win64/chromedriver.exe"
-        Private Shared ReadOnly LOCAL_API As String = "http://127.0.0.1:58888/api/profiles"
+        Private Shared ReadOnly LOCAL_API As String = "http://localhost:58888/api/profiles"
 
         Public Shared Sub Main(args As String())
             Dim port As Integer = GetDebugPort(PROFILE_ID)

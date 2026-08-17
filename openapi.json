@@ -836,6 +836,49 @@
         }
       }
     },
+    "/api/v2/automation/profiles/force_stop": {
+      "post": {
+        "tags": [
+          "profiles"
+        ],
+        "summary": "Bulk Force Stop Profiles",
+        "description": "Force-stop several profiles in one call. On partial failure returns 400 with code profiles.stop_error and data.failed listing UUIDs that could not be stopped.",
+        "operationId": "bulk_force_stop_profiles_api_v2_automation_profiles_force_stop_post",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkForceStopRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Partial or total failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkForceStopFailure"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/automation/profiles/set_password": {
       "post": {
         "tags": [
@@ -1683,6 +1726,44 @@
         }
       }
     },
+    "/api/v2/automation/fingerprint/device_models": {
+      "get": {
+        "tags": [
+          "fingerprint"
+        ],
+        "summary": "Get Device Models",
+        "description": "List Android device models usable for mobile fingerprints. The response is not paginated; all models are returned.",
+        "operationId": "get_device_models_api_v2_automation_fingerprint_device_models_get",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "parameters": [
+          {
+            "required": false,
+            "schema": {
+              "title": "Device Type",
+              "type": "string",
+              "enum": [
+                "phone",
+                "tablet"
+              ]
+            },
+            "name": "device_type",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceModelsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/automation/teams/extensions": {
       "get": {
         "tags": [
@@ -1774,6 +1855,216 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/automation/teams/subaccounts": {
+      "get": {
+        "tags": [
+          "teams"
+        ],
+        "summary": "Get Subaccounts",
+        "description": "List the team's members.",
+        "operationId": "get_subaccounts_api_v2_automation_teams_subaccounts_get",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubaccountsListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "teams"
+        ],
+        "summary": "Create Subaccount",
+        "description": "Invite a new member; the subaccount activates once the emailed invite is accepted. Omitted permissions default to false.",
+        "operationId": "create_subaccount_api_v2_automation_teams_subaccounts_post",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubaccountRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (400 with validation_error envelope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "teams"
+        ],
+        "summary": "Update Subaccount",
+        "description": "Replace a subaccount's permission set (identified by email). Omitted permissions default to false.",
+        "operationId": "update_subaccount_api_v2_automation_teams_subaccounts_patch",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubaccountRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (400 with validation_error envelope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "teams"
+        ],
+        "summary": "Delete Subaccount",
+        "description": "Remove a team member by email.",
+        "operationId": "delete_subaccount_api_v2_automation_teams_subaccounts_delete",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubaccountDeleteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultResp"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Subaccount not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultResp"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/automation/teams/invites": {
+      "get": {
+        "tags": [
+          "teams"
+        ],
+        "summary": "Get Invites",
+        "description": "List pending, not yet accepted invitations.",
+        "operationId": "get_invites_api_v2_automation_teams_invites_get",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitesListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "teams"
+        ],
+        "summary": "Delete Invite",
+        "description": "Cancel a pending invitation by recipient email.",
+        "operationId": "delete_invite_api_v2_automation_teams_invites_delete",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteDeleteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultResp"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invite not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefaultResp"
                 }
               }
             }
@@ -1877,6 +2168,96 @@
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
       },
+      "BaseResponseFolderSerializer": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "$ref": "#/components/schemas/FolderSerializer"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "nullable": true
+              }
+            ],
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[FolderSerializer]"
+      },
+      "BaseResponse_NoneType_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "type": "object",
+            "nullable": true,
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[NoneType]"
+      },
+      "BaseResponselistFolderSerializer": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/FolderSerializer"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "nullable": true
+              }
+            ],
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[list[FolderSerializer]]"
+      },
       "Bookmark": {
         "title": "Bookmark",
         "required": [
@@ -1898,6 +2279,60 @@
             "type": "string"
           }
         }
+      },
+      "BulkForceStopFailure": {
+        "title": "BulkForceStopFailure",
+        "type": "object",
+        "description": "Partial-failure payload: data.failed lists profile UUIDs that could not be stopped (code profiles.stop_error).",
+        "properties": {
+          "success": {
+            "title": "Success",
+            "type": "boolean"
+          },
+          "msg": {
+            "title": "Msg",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "anyOf": [
+              {
+                "type": "string",
+                "nullable": true
+              }
+            ]
+          },
+          "data": {
+            "title": "Data",
+            "type": "object",
+            "properties": {
+              "failed": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "BulkForceStopRequest": {
+        "title": "BulkForceStopRequest",
+        "type": "object",
+        "required": [
+          "uuids"
+        ],
+        "properties": {
+          "uuids": {
+            "title": "Uuids",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 36
+            }
+          }
+        },
+        "additionalProperties": false
       },
       "CPUVariant": {
         "title": "CPUVariant",
@@ -1966,6 +2401,50 @@
         },
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
+      },
+      "CreateFolderValidator": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "assignable_wo_permission": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "nullable": true
+              }
+            ],
+            "title": "Assignable Wo Permission"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CreateFolderValidator"
+      },
+      "CreateFoldersValidator": {
+        "properties": {
+          "folders": {
+            "items": {
+              "$ref": "#/components/schemas/CreateFolderValidator"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Folders"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "folders"
+        ],
+        "title": "CreateFoldersValidator"
       },
       "DefaultResp": {
         "title": "DefaultResp",
@@ -2052,6 +2531,88 @@
         },
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
+      },
+      "DeviceModelOut": {
+        "title": "DeviceModelOut",
+        "type": "object",
+        "required": [
+          "value",
+          "os",
+          "os_versions",
+          "archs",
+          "device_type"
+        ],
+        "properties": {
+          "value": {
+            "title": "Value",
+            "type": "string",
+            "description": "Device model identifier, e.g. M2102J20SG"
+          },
+          "os": {
+            "title": "Os",
+            "type": "string",
+            "enum": [
+              "android"
+            ]
+          },
+          "os_versions": {
+            "title": "Os Versions",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "archs": {
+            "title": "Archs",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "device_type": {
+            "title": "Device Type",
+            "type": "string",
+            "enum": [
+              "phone",
+              "tablet"
+            ]
+          }
+        }
+      },
+      "DeviceModelsResponse": {
+        "title": "DeviceModelsResponse",
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "title": "Success",
+            "type": "boolean",
+            "default": false
+          },
+          "msg": {
+            "title": "Msg",
+            "type": "string",
+            "default": ""
+          },
+          "data": {
+            "title": "Data",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceModelOut"
+            }
+          },
+          "code": {
+            "title": "Code",
+            "anyOf": [
+              {
+                "type": "string",
+                "nullable": true
+              }
+            ]
+          }
+        }
       },
       "ErrorCode": {
         "title": "ErrorCode",
@@ -2345,6 +2906,29 @@
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
       },
+      "FolderSerializer": {
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "title": "Uuid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "assignable_wo_permission": {
+            "type": "boolean",
+            "title": "Assignable Wo Permission"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uuid",
+          "name",
+          "assignable_wo_permission"
+        ],
+        "title": "FolderSerializer"
+      },
       "GeoData": {
         "title": "GeoData",
         "required": [
@@ -2573,6 +3157,79 @@
           "folder": {
             "title": "Folder",
             "type": "string"
+          }
+        }
+      },
+      "InviteDeleteRequest": {
+        "title": "InviteDeleteRequest",
+        "type": "object",
+        "required": [
+          "receiver"
+        ],
+        "properties": {
+          "receiver": {
+            "title": "Receiver",
+            "type": "string",
+            "format": "email"
+          }
+        }
+      },
+      "InviteOut": {
+        "title": "InviteOut",
+        "type": "object",
+        "required": [
+          "receiver",
+          "created_at"
+        ],
+        "properties": {
+          "receiver": {
+            "title": "Receiver",
+            "type": "string",
+            "format": "email"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "InvitesListResponse": {
+        "title": "InvitesListResponse",
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "title": "Success",
+            "type": "boolean",
+            "default": false
+          },
+          "msg": {
+            "title": "Msg",
+            "type": "string",
+            "default": ""
+          },
+          "data": {
+            "title": "Data",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InviteOut"
+            }
+          },
+          "code": {
+            "title": "Code",
+            "anyOf": [
+              {
+                "type": "string",
+                "nullable": true
+              }
+            ]
+          },
+          "total_count": {
+            "title": "Total Count",
+            "type": "integer"
           }
         }
       },
@@ -4001,6 +4658,229 @@
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
       },
+      "SubaccountDeleteRequest": {
+        "title": "SubaccountDeleteRequest",
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string",
+            "format": "email"
+          }
+        }
+      },
+      "SubaccountOut": {
+        "title": "SubaccountOut",
+        "type": "object",
+        "required": [
+          "uuid",
+          "email",
+          "master",
+          "permissions",
+          "created_at"
+        ],
+        "properties": {
+          "uuid": {
+            "title": "Uuid",
+            "type": "string",
+            "maxLength": 36
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "master": {
+            "title": "Master",
+            "type": "boolean"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/SubaccountPermissions"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SubaccountPermissions": {
+        "title": "SubaccountPermissions",
+        "type": "object",
+        "additionalProperties": true,
+        "description": "Permission set for a subaccount. Nested groups hold booleans; omitted permissions default to false.",
+        "properties": {
+          "manage_team": {
+            "type": "boolean"
+          },
+          "edit_tags": {
+            "type": "boolean"
+          },
+          "view_all_tags": {
+            "type": "boolean"
+          },
+          "visible_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "manage_action_log": {
+            "type": "boolean"
+          },
+          "edit_folders": {
+            "type": "boolean"
+          },
+          "view_all_folders": {
+            "type": "boolean"
+          },
+          "visible_folders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "view_profiles_wo_folders": {
+            "type": "boolean"
+          },
+          "proxies": {
+            "type": "object",
+            "properties": {
+              "create": {
+                "type": "boolean"
+              },
+              "edit": {
+                "type": "boolean"
+              },
+              "delete": {
+                "type": "boolean"
+              }
+            }
+          },
+          "paid_proxies": {
+            "type": "object",
+            "properties": {
+              "create": {
+                "type": "boolean"
+              }
+            }
+          },
+          "profiles": {
+            "type": "object",
+            "properties": {
+              "create": {
+                "type": "boolean"
+              },
+              "edit": {
+                "type": "boolean"
+              },
+              "delete": {
+                "type": "boolean"
+              },
+              "transfer": {
+                "type": "boolean"
+              },
+              "clone": {
+                "type": "boolean"
+              },
+              "passwords": {
+                "type": "boolean"
+              }
+            }
+          },
+          "templates": {
+            "type": "object",
+            "properties": {
+              "create": {
+                "type": "boolean"
+              },
+              "edit": {
+                "type": "boolean"
+              },
+              "delete": {
+                "type": "boolean"
+              }
+            }
+          },
+          "extensions": {
+            "type": "object",
+            "properties": {
+              "delete": {
+                "type": "boolean"
+              }
+            }
+          },
+          "tasks": {
+            "type": "object",
+            "properties": {
+              "view": {
+                "type": "boolean"
+              },
+              "manage": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "SubaccountRequest": {
+        "title": "SubaccountRequest",
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string",
+            "format": "email"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/SubaccountPermissions"
+          }
+        }
+      },
+      "SubaccountsListResponse": {
+        "title": "SubaccountsListResponse",
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "success": {
+            "title": "Success",
+            "type": "boolean",
+            "default": false
+          },
+          "msg": {
+            "title": "Msg",
+            "type": "string",
+            "default": ""
+          },
+          "data": {
+            "title": "Data",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubaccountOut"
+            }
+          },
+          "code": {
+            "title": "Code",
+            "anyOf": [
+              {
+                "type": "string",
+                "nullable": true
+              }
+            ]
+          },
+          "total_count": {
+            "title": "Total Count",
+            "type": "integer"
+          }
+        }
+      },
       "TagCreate": {
         "title": "TagCreate",
         "required": [
@@ -4220,6 +5100,33 @@
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
       },
+      "UpdateFolderValidator": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20,
+                "minLength": 1,
+                "nullable": true
+              }
+            ],
+            "title": "Name"
+          },
+          "assignable_wo_permission": {
+            "anyOf": [
+              {
+                "type": "boolean",
+                "nullable": true
+              }
+            ],
+            "title": "Assignable Wo Permission"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateFolderValidator"
+      },
       "ValidationError": {
         "title": "ValidationError",
         "required": [
@@ -4272,190 +5179,6 @@
         },
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
-      },
-      "BaseResponselistFolderSerializer": {
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "title": "Success",
-            "default": false
-          },
-          "msg": {
-            "type": "string",
-            "title": "Msg",
-            "default": ""
-          },
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/FolderSerializer"
-            },
-            "type": "array",
-            "title": "Data"
-          },
-          "code": {
-            "anyOf": [
-              {
-                "type": "string",
-                "nullable": true
-              }
-            ],
-            "title": "Code"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "BaseResponse[list[FolderSerializer]]"
-      },
-      "BaseResponseFolderSerializer": {
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "title": "Success",
-            "default": false
-          },
-          "msg": {
-            "type": "string",
-            "title": "Msg",
-            "default": ""
-          },
-          "data": {
-            "$ref": "#/components/schemas/FolderSerializer"
-          },
-          "code": {
-            "anyOf": [
-              {
-                "type": "string",
-                "nullable": true
-              }
-            ],
-            "title": "Code"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "BaseResponse[FolderSerializer]"
-      },
-      "CreateFoldersValidator": {
-        "properties": {
-          "folders": {
-            "items": {
-              "$ref": "#/components/schemas/CreateFolderValidator"
-            },
-            "type": "array",
-            "maxItems": 100,
-            "minItems": 1,
-            "title": "Folders"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "folders"
-        ],
-        "title": "CreateFoldersValidator"
-      },
-      "UpdateFolderValidator": {
-        "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 20,
-                "minLength": 1,
-                "nullable": true
-              }
-            ],
-            "title": "Name"
-          },
-          "assignable_wo_permission": {
-            "anyOf": [
-              {
-                "type": "boolean",
-                "nullable": true
-              }
-            ],
-            "title": "Assignable Wo Permission"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "UpdateFolderValidator"
-      },
-      "BaseResponse_NoneType_": {
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "title": "Success",
-            "default": false
-          },
-          "msg": {
-            "type": "string",
-            "title": "Msg",
-            "default": ""
-          },
-          "data": {
-            "type": "object",
-            "nullable": true,
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "BaseResponse[NoneType]"
-      },
-      "FolderSerializer": {
-        "properties": {
-          "uuid": {
-            "type": "string",
-            "title": "Uuid"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "assignable_wo_permission": {
-            "type": "boolean",
-            "title": "Assignable Wo Permission"
-          }
-        },
-        "type": "object",
-        "required": [
-          "uuid",
-          "name",
-          "assignable_wo_permission"
-        ],
-        "title": "FolderSerializer"
-      },
-      "CreateFolderValidator": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 20,
-            "minLength": 1,
-            "title": "Name"
-          },
-          "assignable_wo_permission": {
-            "anyOf": [
-              {
-                "type": "boolean",
-                "nullable": true
-              }
-            ],
-            "title": "Assignable Wo Permission"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "CreateFolderValidator"
       }
     },
     "securitySchemes": {

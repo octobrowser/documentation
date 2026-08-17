@@ -6,12 +6,13 @@ The cloud API uses RESTful principles with JSON request/response bodies. All clo
 
 Important notes:
 - Authentication: send `X-Octo-Api-Token: <token>` for every cloud request.
-- Standard envelope: `{ "success": bool, "msg": string, "data": ... }`. List endpoints add `total_count` and `page`.
+- Standard envelope: `{ "success": bool, "msg": string, "data": ..., "code": string | null }`. Paginated listings (profiles, fingerprint renderers) add `total_count` and `page`; teams subaccounts/invites add only `total_count`; other listings return a bare `data` array.
 - Validation errors return HTTP 400 with `{"validation_error": {"body_params" | "query_params": [...]}}`.
 - Pagination: `page` is zero-based; `page_len` is one of `10, 25, 50, 100`.
-- Rate limits: 50–1000 RPM and 500–50000 RPH depending on subscription. Honour `Retry-After` and `X-Ratelimit-*` headers.
-- All UUIDs are 32-character hex strings.
+- Rate limits: 50–1000 RPM and 500–50000 RPH depending on subscription, shared with local-client profile operations. Honour `Retry-After` and `X-Ratelimit-*` headers.
+- Resource UUIDs are 32-character hex strings; team extension IDs use `<extension-id>@<version>`; tags and folders are referenced by name in profile payloads.
 - Timestamps follow ISO 8601.
+- Machine-readable spec: [openapi.json](openapi.json) (OpenAPI 3.0, covers the cloud API including endpoints absent from the official spec).
 - Mirror hosts: `app.octobrowser-mirror1.com` / `.net` / `.org`.
 
 ## Getting Started
@@ -27,7 +28,7 @@ Important notes:
 - [Folders](api/folders.md): Group profiles into folders, introduced in Octo Browser 3.0 (4 endpoints).
 - [Proxies](api/proxies.md): Manage saved HTTP/HTTPS/SOCKS/SSH proxies and reference them from profiles (4 endpoints).
 - [Teams](api/teams.md): Manage subaccounts, invitations, and team-installed extensions (8 endpoints).
-- [Fingerprint](api/fingerprint.md): Browser fingerprint object plus lookup endpoints for renderers, screens, and mobile device models.
+- [Fingerprint](api/fingerprint.md): Browser fingerprint object plus lookup endpoints for renderers, screens, and mobile device models (3 endpoints).
 
 ## Optional
 

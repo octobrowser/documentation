@@ -2,7 +2,7 @@
 
 Tags are coloured labels attached to browser profiles. They are managed independently and referenced by UUID from profile payloads.
 
-All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ... }`.
+All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": string | null }`.
 
 ## Get Tags
 
@@ -50,8 +50,10 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/tags" \
 
 **Endpoint**: `POST /tags`
 
+Returns HTTP `201 Created`.
+
 **Request Body**:
-- `name` (string, required) — tag name.
+- `name` (string, required) — tag name, 1–20 characters.
 - `color` (string, optional) — one of: `grey`, `blue`, `cyan`, `orange`, `green`, `purple`, `red`, `yellow`. Defaults to `grey`. Hex colours are not accepted.
 
 ```bash
@@ -117,28 +119,28 @@ curl -X DELETE "https://app.octobrowser.net/api/v2/automation/tags/ab003313e6904
 {
   "success": true,
   "msg": "",
-  "data": ""
+  "data": null
 }
 ```
 
 ## Using Tags with Profiles
 
-Profile payloads accept tags by UUID. The `tags` field on a profile is an array of tag UUIDs:
+Profile payloads reference tags **by name** (not by UUID — the UUIDs above are only used for `PATCH /tags/{uuid}` and `DELETE /tags/{uuid}`). The `tags` field on a profile is an array of tag names, and `pinned_tag` is a single tag name:
 
 ```json
 {
   "title": "My Profile",
-  "tags": ["3524ff6e3f0245ffbbcb5ea3d0446a8e", "ab1391ce01aa46fcbdd9d02a4569bec4"],
+  "tags": ["facebook", "google"],
   "fingerprint": { "os": "win" }
 }
 ```
 
 ### Search Profiles by Tags
 
-`GET /profiles` accepts `search_tags`, a comma-separated list of tag UUIDs. A profile is returned only when it has **all** listed tags (logical AND, not OR).
+`GET /profiles` accepts `search_tags`, a comma-separated list of tag **names**. A profile is returned only when it has **all** listed tags (logical AND, not OR).
 
 ```bash
-curl -X GET "https://app.octobrowser.net/api/v2/automation/profiles?page_len=10&page=0&search_tags=3524ff6e3f0245ffbbcb5ea3d0446a8e,ab1391ce01aa46fcbdd9d02a4569bec4" \
+curl -X GET "https://app.octobrowser.net/api/v2/automation/profiles?page_len=10&page=0&search_tags=facebook,google" \
   -H "X-Octo-Api-Token: YOUR_API_TOKEN"
 ```
 

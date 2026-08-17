@@ -67,12 +67,14 @@ When you receive a 400, look for `validation_error` first. If it is missing, par
 | Code | Meaning |
 |------|---------|
 | 200  | OK |
+| 201  | Created — returned by `POST /profiles` and `POST /tags`. |
+| 207  | Multi-Status — declared by the OpenAPI spec for `POST /profiles/import` partial results. |
 | 400  | Bad request — body or query failed validation, or a domain rule rejected the call. |
 | 401  | Invalid or missing `X-Octo-Api-Token`. |
 | 403  | The token is valid but the subaccount lacks the required permission, or a quota was reached. |
 | 404  | Resource (profile, tag, proxy, subaccount, …) does not exist. |
 | 409  | Conflict — resource is locked, running, or in a state that forbids the operation. |
-| 422  | Less common variant of 400 returned by some FastAPI validators. The body is `{ "detail": [{ "loc": [...], "msg": "...", "type": "..." }] }`. |
+| 422  | Declared as the validation response throughout the official OpenAPI spec, but in practice the API returns validation failures as `400` with the `validation_error` envelope above. Treat a 422 body of `{ "detail": [{ "loc": [...], "msg": "...", "type": "..." }] }` as a rare fallback. |
 | 429  | Rate limit exceeded; see [rate-limiting.md](rate-limiting.md). |
 | 5xx  | Server-side issue. Retry with exponential backoff. |
 
@@ -90,6 +92,8 @@ The `code` field on the business error envelope. Codes prefixed with a domain (`
 | `limit_reached`     | Resource limit reached on the current subscription. |
 | `already_exists`    | Conflict — a record with the same key already exists. |
 | `internal_error`    | Server-side fault. Retry. |
+| `unknown_error`     | Unclassified failure (from the OpenAPI spec's `ErrorCode` enum). |
+| `no_tokens`         | No API token exists for the workspace (from the OpenAPI spec's `ErrorCode` enum). |
 | `rate_limit_exceeded` | RPM/RPH bucket empty. See [rate-limiting.md](rate-limiting.md). |
 
 ### Profiles
@@ -117,6 +121,7 @@ The `code` field on the business error envelope. Codes prefixed with a domain (`
 | Code | Meaning |
 |------|---------|
 | `fingerprints.invalid`            | Fingerprint object failed server-side validation. |
+| `fingerprints.invalid_mobile_model` | `device_model` is unknown, or the chosen `os_version` is not in that model's `os_versions` list. |
 | `subscriptions.inactive`          | Workspace has no active subscription. |
 | `proxy_providers.empty_balance`   | Built-in proxy provider has no balance. |
 | `proxy.maximum_saved_error`       | Proxy quota reached on the subscription. |

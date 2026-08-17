@@ -2,7 +2,7 @@
 
 The `fingerprint` object on a profile controls every detectable browser characteristic. Three lookup endpoints expose the values accepted by that object.
 
-All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ... }`. The renderers endpoint also returns `total_count` and `page` for pagination.
+All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": string | null }`. The renderers endpoint also returns `total_count` and `page` for pagination; screens and device models return a bare `data` array.
 
 ## Fingerprint Object
 
@@ -12,9 +12,9 @@ The `fingerprint` field is required on profile creation. Only `os` is mandatory 
 
 | Field         | Type    | Notes |
 |---------------|---------|-------|
-| `os`          | enum    | `win`, `mac`, `lin`, `android`. Required. |
+| `os`          | enum    | `win`, `mac`, `android`. Required. |
 | `os_arch`     | string  | `x86` or `arm`. Defaults depend on `os`. |
-| `os_version`  | string  | E.g. `10`, `11` for Windows; `13`, `14`, `15` for Android. |
+| `os_version`  | string  | E.g. `10`, `11` for Windows; `12`–`15` for Android (model-dependent — use only versions listed in `os_versions` for the chosen `device_model`, otherwise the API returns `fingerprints.invalid_mobile_model`). |
 | `user_agent`  | string  | Up to 255 chars. |
 | `screen`      | string  | E.g. `1920x1080`. Pick from `GET /fingerprint/screens`. |
 | `cpu`         | int     | One of `2, 4, 6, 8, 10, 11, 12, 14, 16, 20, 24`. |
@@ -45,7 +45,7 @@ List WebGL renderer strings filtered by OS and architecture. Paginated.
 **Endpoint**: `GET /fingerprint/renderers`
 
 **Query Parameters**:
-- `os` (string, optional) — `win`, `mac`, `lin`, `android`.
+- `os` (string, optional) — `win`, `mac`, or `android`. Defaults to `win`.
 - `os_arch` (string, optional) — `x86` or `arm`.
 - `page_len` (int, optional) — page size; one of `10, 25, 50, 100`.
 - `page` (int, optional) — zero-based page number.
@@ -79,7 +79,7 @@ List screen resolutions for the requested platform.
 **Endpoint**: `GET /fingerprint/screens`
 
 **Query Parameters**:
-- `os` (string, optional) — `win`, `mac`, `lin`, `android`.
+- `os` (string, optional) — `win`, `mac`, or `android`. Defaults to `win`.
 - `os_arch` (string, optional) — `x86` or `arm`.
 
 ```bash
@@ -108,7 +108,9 @@ List Android device models that can be used for mobile fingerprints.
 **Endpoint**: `GET /fingerprint/device_models`
 
 **Query Parameters**:
-- `device_type` (string, required) — `phone` or `tablet`.
+- `device_type` (string, optional) — `phone` or `tablet`.
+
+The response is not paginated — all models (800+) are returned in one call, so cache it client-side.
 
 ```bash
 curl -X GET "https://app.octobrowser.net/api/v2/automation/fingerprint/device_models?device_type=phone" \
@@ -206,10 +208,10 @@ Each counter accepts integers 0–5.
 {
   "os": "android",
   "os_arch": "arm",
-  "os_version": "15",
+  "os_version": "13",
   "device_type": "phone",
-  "device_model": "SM-S911U",
-  "user_agent": "Mozilla/5.0 (Linux; Android 15; SM-S911U) AppleWebKit/537.36 Mobile Safari/537.36",
+  "device_model": "M2102J20SG",
+  "user_agent": "Mozilla/5.0 (Linux; Android 13; M2102J20SG) AppleWebKit/537.36 Mobile Safari/537.36",
   "languages": { "type": "ip", "data": null },
   "timezone": { "type": "ip", "data": null },
   "geolocation": { "type": "ip", "data": null },
@@ -244,4 +246,4 @@ Each counter accepts integers 0–5.
 - Use values from `/fingerprint/renderers`, `/fingerprint/screens`, and `/fingerprint/device_models` rather than guessing — invalid values are rejected.
 - Keep `user_agent` consistent with `os` and `os_version`.
 - Match `timezone`/`geolocation` to your proxy's location when realism matters.
-- For mobile profiles, always pair `device_type` with a `device_model` from the lookup endpoint.
+- For mobile profiles, always pair `device_type` with a `device_model` from the lookup endpoint, and pick `os_version` from that model's `os_versions` list — a version the model does not support is rejected with `fingerprints.invalid_mobile_model`.

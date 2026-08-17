@@ -14,7 +14,7 @@ If you are an LLM, agent, or crawler, start here — these are the cheapest path
 | Purpose | URL |
 |---|---|
 | Site index (llmstxt.org spec) | [`/llms.txt`](llms.txt) · also at [`/.well-known/llms.txt`](.well-known/llms.txt) |
-| Full docs in one file (~80 KB) | [`/llms-full.txt`](llms-full.txt) |
+| Full docs in one file (~90 KB) | [`/llms-full.txt`](llms-full.txt) |
 | OpenAPI 3.0 spec | [`/openapi.json`](openapi.json) |
 | Crawler policy | [`/robots.txt`](robots.txt) · [`/ai.txt`](ai.txt) |
 | Sitemap | [`/sitemap.xml`](sitemap.xml) |
@@ -32,7 +32,7 @@ If you are an LLM, agent, or crawler, start here — these are the cheapest path
 - [`api/folders.md`](api/folders.md) — profile folders, Octo 3.0+ (4 endpoints)
 - [`api/proxies.md`](api/proxies.md) — saved proxies (4 endpoints)
 - [`api/teams.md`](api/teams.md) — subaccounts, invitations, extensions (8 endpoints)
-- [`api/fingerprint.md`](api/fingerprint.md) — fingerprint object, renderer/screen/mobile lookups
+- [`api/fingerprint.md`](api/fingerprint.md) — fingerprint object, renderer/screen/mobile lookups (3 endpoints)
 
 **Optional**
 - [`api/local-client.md`](api/local-client.md) — desktop client on `localhost:58888` (12 endpoints)
@@ -46,11 +46,11 @@ If you are an LLM, agent, or crawler, start here — these are the cheapest path
 - **Base URL:** `https://app.octobrowser.net/api/v2/automation`
 - **Authentication:** header `X-Octo-Api-Token: <token>` on every cloud request
 - **Local client:** unauthenticated, `http://localhost:58888`
-- **Response envelope:** `{ "success": bool, "msg": string, "data": ... }`; list endpoints add `total_count` and `page`
+- **Response envelope:** `{ "success": bool, "msg": string, "data": ..., "code": string | null }`; paginated listings (profiles, renderers) add `total_count` and `page`
 - **Pagination:** zero-based `page`; `page_len` ∈ `{10, 25, 50, 100}`
 - **Validation errors:** HTTP 400 with `{"validation_error": {"body_params" | "query_params": [...]}}`
-- **Rate limits:** 50–1000 RPM and 500–50000 RPH depending on subscription
-- **IDs:** 32-char hex UUIDs; timestamps are ISO 8601
+- **Rate limits:** 50–1000 RPM and 500–50000 RPH depending on subscription (local-client profile operations count too)
+- **IDs:** 32-char hex UUIDs; tags and folders are referenced by name in profile payloads; timestamps are ISO 8601
 - **Mirrors:** `app.octobrowser-mirror1.com` / `.net` / `.org`
 
 ---

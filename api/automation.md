@@ -3,7 +3,7 @@
 Drive Octo Browser profiles from Selenium, Playwright, Puppeteer, and similar Chromium-automation frameworks. The pattern is the same in every language:
 
 1. Use the **cloud API** (`https://app.octobrowser.net/api/v2/automation`) to manage profiles.
-2. Use the **local client API** (`http://127.0.0.1:58888`) to start a profile with `debug_port: true`.
+2. Use the **local client API** (`http://localhost:58888`) to start a profile with `debug_port: true`.
 3. Connect your automation library to the returned `ws_endpoint` (CDP WebSocket) or `debug_port`.
 
 ## Prerequisites
@@ -29,7 +29,7 @@ const OCTO_REMOTE_API = axios.create({
 });
 
 const OCTO_LOCAL_API = axios.create({
-  baseURL: 'http://127.0.0.1:58888/api/profiles/',
+  baseURL: 'http://localhost:58888/api/profiles/',
   timeout: 100000,
 });
 
@@ -120,7 +120,7 @@ const OCTO_REMOTE_API = axios.create({
 });
 
 const OCTO_LOCAL_API = axios.create({
-  baseURL: 'http://127.0.0.1:58888/api/profiles/',
+  baseURL: 'http://localhost:58888/api/profiles/',
   timeout: 100000,
 });
 
@@ -163,7 +163,7 @@ PROFILE_UUID = "UUID_OF_YOUR_PROFILE"
 def main():
     with sync_playwright() as p:
         start_response = httpx.post(
-            'http://127.0.0.1:58888/api/profiles/start',
+            'http://localhost:58888/api/profiles/start',
             json={'uuid': PROFILE_UUID, 'headless': False, 'debug_port': True},
         )
         if not start_response.is_success:
@@ -194,7 +194,7 @@ async def main():
     async with async_playwright() as p:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                'http://127.0.0.1:58888/api/profiles/start',
+                'http://localhost:58888/api/profiles/start',
                 json={'uuid': PROFILE_UUID, 'headless': False, 'debug_port': True},
             )
             if not response.is_success:
@@ -267,7 +267,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
 public class Main {
     private static final String PROFILE_ID = "PROFILE_UUID";
     private static final String CHROME_DRIVER = "./path/to/chromedriver.exe";
-    private static final String LOCAL_API = "http://127.0.0.1:58888/api/profiles";
+    private static final String LOCAL_API = "http://localhost:58888/api/profiles";
 
     public static void main(String[] args) throws Exception {
         int port = getDebugPort(PROFILE_ID);
@@ -315,7 +315,7 @@ Module Program
     Public Class Main
         Private Shared ReadOnly PROFILE_ID As String = "PROFILE_UUID_SHOULD_BE_HERE"
         Private Shared ReadOnly CHROME_DRIVER As String = "./chromedriver-win64/chromedriver.exe"
-        Private Shared ReadOnly LOCAL_API As String = "http://127.0.0.1:58888/api/profiles"
+        Private Shared ReadOnly LOCAL_API As String = "http://localhost:58888/api/profiles"
 
         Public Shared Sub Main(args As String())
             Dim port As Integer = GetDebugPort(PROFILE_ID)

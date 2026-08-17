@@ -2,7 +2,7 @@
 
 Manage team-wide resources: shared browser extensions, team members (subaccounts), and pending invitations.
 
-All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ... }`. Listing endpoints additionally return `total_count`.
+All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": string | null }`. The subaccounts and invites listings additionally return `total_count`; the extensions listing does not.
 
 > Team features require a team or enterprise subscription.
 
@@ -86,7 +86,7 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" \
       "uuid": "54d6ff5042c545b990349a7a7e653e81",
       "email": "test@octo.com",
       "master": false,
-      "created_at": "2023-11-27 13:07:28",
+      "created_at": "2023-11-27T13:07:28",
       "permissions": {
         "manage_team": false,
         "edit_tags": false,
@@ -98,7 +98,11 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" \
         "templates":    { "create": false, "edit": false, "delete": false },
         "extensions":   { "delete": false },
         "tasks":        { "view": false, "manage": false },
-        "visible_tags": ["tag_name"]
+        "visible_tags": ["tag_name"],
+        "view_all_folders": false,
+        "visible_folders": [],
+        "edit_folders": false,
+        "view_profiles_wo_folders": false
       }
     }
   ]
@@ -134,7 +138,11 @@ curl -X POST "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" \
       "templates":    { "create": false, "edit": false, "delete": false },
       "extensions":   { "delete": false },
       "tasks":        { "view": false, "manage": false },
-      "visible_tags": ["tag_name"]
+      "visible_tags": ["tag_name"],
+      "view_all_folders": false,
+      "visible_folders": [],
+      "edit_folders": false,
+      "view_profiles_wo_folders": false
     }
   }'
 ```
@@ -170,7 +178,11 @@ curl -X PATCH "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" 
       "templates":    { "create": true, "edit": true, "delete": true },
       "extensions":   { "delete": true },
       "tasks":        { "view": true, "manage": true },
-      "visible_tags": []
+      "visible_tags": [],
+      "view_all_folders": true,
+      "visible_folders": [],
+      "edit_folders": true,
+      "view_profiles_wo_folders": true
     }
   }'
 ```
@@ -226,7 +238,7 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/invites" \
   "msg": "",
   "total_count": 1,
   "data": [
-    { "receiver": "test_receiver@octo.net", "created_at": "2023-11-27 13:07:28" }
+    { "receiver": "test_receiver@octo.net", "created_at": "2023-11-27T13:07:28" }
   ]
 }
 ```
@@ -263,6 +275,9 @@ Top-level boolean flags:
 | `edit_tags`         | Create, rename, recolour, and delete tags. |
 | `view_all_tags`     | See every tag on the workspace; otherwise the subaccount only sees tags listed in `visible_tags`. |
 | `manage_action_log` | Access and manage the team's action log. |
+| `edit_folders`      | Create, rename, and delete folders (Octo 3.0+). |
+| `view_all_folders`  | See every folder on the workspace; otherwise the subaccount only sees folders listed in `visible_folders`. |
+| `view_profiles_wo_folders` | See profiles that are not assigned to any folder. |
 
 Nested permission groups:
 
@@ -275,7 +290,7 @@ Nested permission groups:
 | `extensions`    | `delete` |
 | `tasks`         | `view`, `manage` |
 
-`visible_tags` is an array of tag names — when `view_all_tags` is `false`, the subaccount can see only profiles tagged with at least one of these tag names.
+`visible_tags` is an array of tag names — when `view_all_tags` is `false`, the subaccount can see only profiles tagged with at least one of these tag names. `visible_folders` works the same way for folders when `view_all_folders` is `false` (Octo 3.0+).
 
 ## Common Errors
 
