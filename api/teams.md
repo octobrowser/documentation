@@ -37,7 +37,7 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/extensions?star
 }
 ```
 
-The extension `uuid` is the canonical extension id appended with `@<version>`.
+The extension `uuid` is the canonical extension id appended with `@<version>` (e.g. `54d6ff5042c545b990349a7a7e653e81@2.0.12`). Always use the value as reported by `GET /teams/extensions`, not the bare store id.
 
 ## Delete Extensions
 
@@ -46,7 +46,7 @@ Remove team-installed extensions by UUID.
 **Endpoint**: `DELETE /teams/extensions`
 
 **Request Body**:
-- `uuids` (string[], required) — up to 100 extension UUIDs per request.
+- `uuids` (string[], required) — up to 100 extension UUIDs per request, in the `<extension-id>@<version>` form returned by `GET /teams/extensions`.
 
 > If a profile is running while the extension is deleted, the running session keeps using the extension. Once that profile stops, the extension reappears in the team's extension list. Make sure no profile is using the extensions you are about to remove.
 
@@ -109,7 +109,7 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" \
 }
 ```
 
-`master: true` marks the workspace owner.
+`master: true` marks the workspace owner. `created_at` is an ISO 8601 timestamp without a timezone suffix (`YYYY-MM-DDTHH:MM:SS`).
 
 ## Create Subaccount
 
@@ -274,7 +274,7 @@ Top-level boolean flags:
 | `manage_team`       | Add, edit, and remove subaccounts. |
 | `edit_tags`         | Create, rename, recolour, and delete tags. |
 | `view_all_tags`     | See every tag on the workspace; otherwise the subaccount only sees tags listed in `visible_tags`. |
-| `manage_action_log` | Access and manage the team's action log. |
+| `manage_action_log` | Access and manage the team's action log (see [action-log.md](action-log.md)). |
 | `edit_folders`      | Create, rename, and delete folders (Octo 3.0+). |
 | `view_all_folders`  | See every folder on the workspace; otherwise the subaccount only sees folders listed in `visible_folders`. |
 | `view_profiles_wo_folders` | See profiles that are not assigned to any folder. |
@@ -288,7 +288,7 @@ Nested permission groups:
 | `profiles`      | `create`, `edit`, `delete`, `transfer`, `clone`, `passwords` |
 | `templates`     | `create`, `edit`, `delete` |
 | `extensions`    | `delete` |
-| `tasks`         | `view`, `manage` |
+| `tasks`         | `view`, `manage` — see and manage tasks. |
 
 `visible_tags` is an array of tag names — when `view_all_tags` is `false`, the subaccount can see only profiles tagged with at least one of these tag names. `visible_folders` works the same way for folders when `view_all_folders` is `false` (Octo 3.0+).
 

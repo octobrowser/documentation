@@ -37,6 +37,8 @@ Avoid embedding the token in source code. Store it in an environment variable:
 export OCTO_API_TOKEN="your_token_here"
 ```
 
+The desktop client also reads `OCTO_API_TOKEN` at startup and signs in automatically, which lets you script cold-start automation without `POST /api/auth/login` — see [local-client.md](local-client.md#signing-in-with-an-api-token) for per-OS launch commands.
+
 ```python
 import os
 import requests

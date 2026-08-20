@@ -2,6 +2,7 @@
   "openapi": "3.0.2",
   "info": {
     "title": "Octobrowser API",
+    "description": "Octo Browser cloud automation API. The Action Log WebSocket stream (wss://app.octobrowser.net/api/v2/automation/ws/action_log) is not expressible in OpenAPI 3.0 and is documented separately in api/action-log.md.",
     "version": "2.0.10"
   },
   "paths": {
@@ -2329,7 +2330,10 @@
             "items": {
               "type": "string",
               "maxLength": 36
-            }
+            },
+            "minItems": 1,
+            "maxItems": 100,
+            "x-source": "Postman collection 2026-08-20 (1–100 per request)"
           }
         },
         "additionalProperties": false
@@ -2666,7 +2670,9 @@
               "maxLength": 36,
               "minLength": 1,
               "type": "string"
-            }
+            },
+            "maxItems": 100,
+            "x-source": "Postman collection 2026-08-20 (max 100)"
           },
           "export_proxy": {
             "title": "Export Proxy",
@@ -3912,6 +3918,35 @@
               "type": "string"
             },
             "default": []
+          },
+          "images_load_limit": {
+            "title": "Images Load Limit",
+            "type": "integer",
+            "nullable": true,
+            "description": "Maximum size of images to load, in bytes.",
+            "x-source": "live-verified 2026-08-20"
+          },
+          "local_cache": {
+            "title": "Local Cache",
+            "type": "boolean",
+            "description": "Keep the profile's browser cache locally between sessions.",
+            "x-source": "live-verified 2026-08-20"
+          },
+          "launch_args": {
+            "title": "Launch Args",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Extra command-line arguments passed to the browser on start.",
+            "x-source": "live-verified 2026-08-20"
+          },
+          "extra_info": {
+            "title": "Extra Info",
+            "type": "object",
+            "nullable": true,
+            "description": "Free-form metadata object stored with the profile.",
+            "x-source": "live-verified 2026-08-20"
           }
         },
         "additionalProperties": false,
@@ -4187,6 +4222,35 @@
             "items": {
               "type": "string"
             }
+          },
+          "images_load_limit": {
+            "title": "Images Load Limit",
+            "type": "integer",
+            "nullable": true,
+            "description": "Maximum size of images to load, in bytes.",
+            "x-source": "live-verified 2026-08-20"
+          },
+          "local_cache": {
+            "title": "Local Cache",
+            "type": "boolean",
+            "description": "Keep the profile's browser cache locally between sessions.",
+            "x-source": "live-verified 2026-08-20"
+          },
+          "launch_args": {
+            "title": "Launch Args",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Extra command-line arguments passed to the browser on start.",
+            "x-source": "live-verified 2026-08-20"
+          },
+          "extra_info": {
+            "title": "Extra Info",
+            "type": "object",
+            "nullable": true,
+            "description": "Free-form metadata object stored with the profile.",
+            "x-source": "live-verified 2026-08-20"
           }
         },
         "additionalProperties": false,

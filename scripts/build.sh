@@ -26,6 +26,7 @@ cp ./llms.txt ./.well-known/llms.txt
     api/folders.md \
     api/proxies.md \
     api/teams.md \
+    api/action-log.md \
     api/fingerprint.md \
     api/local-client.md \
     api/docker.md \
@@ -46,7 +47,7 @@ cp ./llms.txt ./.well-known/llms.txt
   echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
   for path in "/" "/llms.txt" "/llms-full.txt" "/openapi.json" \
     "/api/authentication.md" "/api/rate-limiting.md" "/api/errors.md" \
-    "/api/profiles.md" "/api/tags.md" "/api/folders.md" "/api/proxies.md" "/api/teams.md" \
+    "/api/profiles.md" "/api/tags.md" "/api/folders.md" "/api/proxies.md" "/api/teams.md" "/api/action-log.md" \
     "/api/fingerprint.md" "/api/local-client.md" "/api/docker.md" \
     "/api/automation.md"
   do

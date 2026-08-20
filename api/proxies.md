@@ -42,15 +42,19 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/proxies" \
 
 **Endpoint**: `POST /proxies`
 
+Returns HTTP `201 Created`. Unknown body fields are rejected.
+
 **Request Body**:
 - `type` (string, required) — one of `http`, `https`, `socks`, `socks5`, `ssh`.
-- `host` (string, required)
-- `port` (integer, required)
-- `title` (string, required)
-- `login` (string, optional)
-- `password` (string, optional)
-- `change_ip_url` (string, optional) — URL hit by the rotate-IP action.
-- `external_id` (string, optional) — your own identifier; preserved in responses.
+- `host` (string, required) — an IPv4/IPv6 address or a hostname of 4–253 characters.
+- `port` (integer, required) — 0–65535.
+- `title` (string, required) — 1–255 characters.
+- `login` (string, optional) — up to 255 characters.
+- `password` (string, optional) — up to 255 characters.
+- `change_ip_url` (string, optional) — URL hit by the rotate-IP action; a valid URI, 1–65536 characters.
+- `external_id` (string, optional) — your own identifier, up to 255 characters; preserved in responses.
+
+**Response**: the created proxy object, including `uuid` and `profiles_count` (number of profiles using the proxy, `0` for a new proxy).
 
 ```bash
 curl -X POST "https://app.octobrowser.net/api/v2/automation/proxies" \
@@ -144,7 +148,19 @@ curl -X DELETE "https://app.octobrowser.net/api/v2/automation/proxies/789f4d3f89
 
 ## Using Proxies with Profiles
 
+The `proxy` field of a profile payload (`POST /profiles`, `PATCH /profiles/{uuid}`) accepts three forms: a saved-proxy UUID, an inline proxy object, or `null`.
+
 ### Reference a Saved Proxy by UUID
+
+Pass the UUID either as a plain string or as an object with a `uuid` key:
+
+```json
+{
+  "title": "Profile with saved proxy",
+  "fingerprint": { "os": "win" },
+  "proxy": "789f4d3f898d4e10acf2bebd249fcf95"
+}
+```
 
 ```json
 {
@@ -154,9 +170,20 @@ curl -X DELETE "https://app.octobrowser.net/api/v2/automation/proxies/789f4d3f89
 }
 ```
 
+An unknown UUID is rejected with `404`:
+
+```json
+{
+  "success": false,
+  "msg": "proxy not found:",
+  "data": "",
+  "code": "not_found"
+}
+```
+
 ### Inline Proxy on a Profile
 
-The same proxy fields accepted by `POST /proxies` may be embedded directly inside a profile payload. The proxy is then attached to that profile only and is not added to `GET /proxies`.
+The same proxy fields accepted by `POST /proxies` may be embedded directly inside a profile payload. The proxy is then attached to that profile only and is not added to `GET /proxies`. In `GET /profiles/{uuid}` such a temporary proxy is returned with `"uuid": ""` and without `title` or `profiles_count`.
 
 ```json
 {
@@ -170,6 +197,14 @@ The same proxy fields accepted by `POST /proxies` may be embedded directly insid
     "password": "pass"
   }
 }
+```
+
+### Detach a Proxy
+
+Send `"proxy": null` on `PATCH /profiles/{uuid}`; the profile's `proxy` then reads `null`.
+
+```json
+{ "proxy": null }
 ```
 
 ### Filter Profiles by Proxy
@@ -196,9 +231,19 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/profiles?page_len=10&
 | `socks5`  | SOCKS5 proxy |
 | `ssh`     | SSH-tunnel proxy |
 
+## Bulk Import Tip
+
+Upstream example scripts import saved proxies from a `.txt` file, one proxy per line, fields in this exact order and separated by `;`:
+
+```text
+protocol;host;port;login;password;title;change_ip_url
+```
+
+`change_ip_url` is optional; the scripts accept the protocols `socks5`, `http`, and `ssh`. Each line maps directly onto a `POST /proxies` body.
+
 ## Common Errors
 
-- **400 Bad Request** — invalid `type`, missing `host`/`port`/`title`, or malformed body.
+- **400 Bad Request** — invalid `type`, missing `host`/`port`/`title`, out-of-range `port`, unknown field, or malformed body.
 - **404 Not Found** — proxy UUID does not exist.
 - **409 Conflict** — proxy is in use by a running profile and cannot be modified or deleted.
 

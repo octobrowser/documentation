@@ -32,6 +32,7 @@ If you are an LLM, agent, or crawler, start here — these are the cheapest path
 - [`api/folders.md`](api/folders.md) — profile folders, Octo 3.0+ (4 endpoints)
 - [`api/proxies.md`](api/proxies.md) — saved proxies (4 endpoints)
 - [`api/teams.md`](api/teams.md) — subaccounts, invitations, extensions (8 endpoints)
+- [`api/action-log.md`](api/action-log.md) — team audit stream over WebSocket (1 endpoint, upstream-documented)
 - [`api/fingerprint.md`](api/fingerprint.md) — fingerprint object, renderer/screen/mobile lookups (3 endpoints)
 
 **Optional**

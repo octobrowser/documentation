@@ -13,7 +13,7 @@ The `fingerprint` field is required on profile creation. Only `os` is mandatory 
 | Field         | Type    | Notes |
 |---------------|---------|-------|
 | `os`          | enum    | `win`, `mac`, `android`. Required. |
-| `os_arch`     | string  | `x86` or `arm`. Defaults depend on `os`. |
+| `os_arch`     | string  | `x86` or `arm`. Defaults depend on `os`; use `arm` for Android and Apple silicon Macs. |
 | `os_version`  | string  | E.g. `10`, `11` for Windows; `12`–`15` for Android (model-dependent — use only versions listed in `os_versions` for the chosen `device_model`, otherwise the API returns `fingerprints.invalid_mobile_model`). |
 | `user_agent`  | string  | Up to 255 chars. |
 | `screen`      | string  | E.g. `1920x1080`. Pick from `GET /fingerprint/screens`. |
@@ -38,6 +38,8 @@ When `os` is `android`, the following extra fields apply:
 | `device_type`   | enum   | `phone` or `tablet`. |
 | `device_model`  | string | Model identifier from `GET /fingerprint/device_models`. |
 
+Mobile (Android) profiles do not support browser extensions.
+
 ## Get Renderers
 
 List WebGL renderer strings filtered by OS and architecture. Paginated.
@@ -45,10 +47,12 @@ List WebGL renderer strings filtered by OS and architecture. Paginated.
 **Endpoint**: `GET /fingerprint/renderers`
 
 **Query Parameters**:
-- `os` (string, optional) — `win`, `mac`, or `android`. Defaults to `win`.
+- `os` (string, optional) — `win`, `mac`, or `android`. Defaults to `win`. Any other value (e.g. `lin`) is rejected with `400` (`Input should be 'win', 'mac' or 'android'`).
 - `os_arch` (string, optional) — `x86` or `arm`.
-- `page_len` (int, optional) — page size; one of `10, 25, 50, 100`.
+- `page_len` (int, optional) — page size; must be one of `10, 25, 50, 100`, any other value is rejected with `400`.
 - `page` (int, optional) — zero-based page number.
+
+`os=android` currently returns an empty list — mobile renderers are derived from the `device_model`.
 
 ```bash
 curl -X GET "https://app.octobrowser.net/api/v2/automation/fingerprint/renderers?os=win&os_arch=x86&page_len=100&page=0" \
@@ -79,8 +83,10 @@ List screen resolutions for the requested platform.
 **Endpoint**: `GET /fingerprint/screens`
 
 **Query Parameters**:
-- `os` (string, optional) — `win`, `mac`, or `android`. Defaults to `win`.
+- `os` (string, optional) — `win`, `mac`, or `android`. Defaults to `win`; other values are rejected with `400`.
 - `os_arch` (string, optional) — `x86` or `arm`.
+
+`os=android` currently returns an empty list — mobile screens are derived from the `device_model`.
 
 ```bash
 curl -X GET "https://app.octobrowser.net/api/v2/automation/fingerprint/screens?os=win&os_arch=x86" \
@@ -131,7 +137,7 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/fingerprint/device_mo
 }
 ```
 
-> The endpoint returns both phones and tablets regardless of the requested `device_type`. Filter the response client-side on the `device_type` field if you need a strict match.
+> The endpoint returns both phones and tablets regardless of the requested `device_type` (`device_type=phone` still includes tablets such as `SM-T870`). Filter the response client-side on the `device_type` field if you need a strict match.
 
 ## Configuration Types
 
@@ -142,7 +148,7 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/fingerprint/device_mo
 ```
 
 - `type` — `ip` (auto-detect from proxy IP), `real` (system languages), or `manual`.
-- `data` — array of BCP-47 language tags. Required only when `type=manual`.
+- `data` — array of language tags. Required only when `type=manual`. The API stores any strings verbatim without validation or normalisation (both `["ru-RU","en-US"]` and `["[ru-RU] Russian (Russia)"]` are accepted), so use well-formed BCP-47 tags such as `en-US` to keep the browser's `navigator.languages` realistic.
 
 ### Timezone Configuration
 
@@ -219,6 +225,18 @@ Each counter accepts integers 0–5.
 }
 ```
 
+### Android Tablet Fingerprint
+
+```json
+{
+  "os": "android",
+  "os_arch": "arm",
+  "os_version": "13",
+  "device_type": "tablet",
+  "device_model": "SM-T870"
+}
+```
+
 ### Fully Specified Desktop Fingerprint
 
 ```json
@@ -245,5 +263,6 @@ Each counter accepts integers 0–5.
 
 - Use values from `/fingerprint/renderers`, `/fingerprint/screens`, and `/fingerprint/device_models` rather than guessing — invalid values are rejected.
 - Keep `user_agent` consistent with `os` and `os_version`.
+- Do not attach `extensions` to Android profiles — mobile profiles do not support them.
 - Match `timezone`/`geolocation` to your proxy's location when realism matters.
 - For mobile profiles, always pair `device_type` with a `device_model` from the lookup endpoint, and pick `os_version` from that model's `os_versions` list — a version the model does not support is rejected with `fingerprints.invalid_mobile_model`.

@@ -44,7 +44,7 @@ X-Ratelimit-Reset: 1671789217   # unix timestamp when the minute window resets
 
 ## Handling 429 Responses
 
-When the bucket is empty, the API returns `429 Too Many Requests` with a non-zero `Retry-After` header.
+When the bucket is empty, the API returns `429 Too Many Requests` with a non-zero `Retry-After` header. Because the budget is team-wide, **stop all requests across the team** (not just the one that got the `429`) and pause for `Retry-After` seconds before retrying. Ignoring `429` responses may lead to stricter limits being enforced on the team.
 
 ```python
 import time

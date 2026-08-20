@@ -38,6 +38,8 @@ Creates one or more folders in a single request.
 
 **Endpoint**: `POST /folders`
 
+Returns HTTP `200 OK` (not `201`, unlike `POST /profiles`, `POST /tags`, and `POST /proxies`).
+
 **Request Body**:
 - `folders` (array, required) — 1 to 100 folder objects, each with:
   - `name` (string, required) — folder name, 1–20 characters.
@@ -129,7 +131,7 @@ Profile payloads accept an optional `folder` field (string) on `POST /profiles`,
 
 ## Common Errors
 
-- **400 Bad Request** — validation failure, e.g. a name longer than 20 characters:
+- **400 Bad Request** — validation failure, e.g. a name longer than 20 characters. Note that this payload has no `success`/`msg`/`data`/`code` envelope, only `validation_error`:
 
   ```json
   {

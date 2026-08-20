@@ -28,6 +28,7 @@ Important notes:
 - [Folders](api/folders.md): Group profiles into folders, introduced in Octo Browser 3.0 (4 endpoints).
 - [Proxies](api/proxies.md): Manage saved HTTP/HTTPS/SOCKS/SSH proxies and reference them from profiles (4 endpoints).
 - [Teams](api/teams.md): Manage subaccounts, invitations, and team-installed extensions (8 endpoints).
+- [Action Log](api/action-log.md): Real-time team audit stream over WebSocket (`wss://.../ws/action_log`) with watermark-based resume (1 WebSocket endpoint, upstream-documented).
 - [Fingerprint](api/fingerprint.md): Browser fingerprint object plus lookup endpoints for renderers, screens, and mobile device models (3 endpoints).
 
 ## Optional

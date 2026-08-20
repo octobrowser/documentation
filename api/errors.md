@@ -67,8 +67,8 @@ When you receive a 400, look for `validation_error` first. If it is missing, par
 | Code | Meaning |
 |------|---------|
 | 200  | OK |
-| 201  | Created — returned by `POST /profiles` and `POST /tags`. |
-| 207  | Multi-Status — declared by the OpenAPI spec for `POST /profiles/import` partial results. |
+| 201  | Created — returned by `POST /profiles`, `POST /tags`, and `POST /proxies` (`POST /folders` returns 200). |
+| 207  | Multi-Status — declared by the OpenAPI spec for `POST /profiles/import` partial results, and per the official Postman collection for a partially successful mass `POST /profiles/force_stop` (not live-verified). |
 | 400  | Bad request — body or query failed validation, or a domain rule rejected the call. |
 | 401  | Invalid or missing `X-Octo-Api-Token`. |
 | 403  | The token is valid but the subaccount lacks the required permission, or a quota was reached. |
@@ -87,7 +87,7 @@ The `code` field on the business error envelope. Codes prefixed with a domain (`
 | Code | Meaning |
 |------|---------|
 | `api_token`         | Invalid or missing `X-Octo-Api-Token`. |
-| `not_found`         | Resource UUID does not exist. |
+| `not_found`         | Resource UUID does not exist (also returned for an unknown or temporary proxy UUID in a profile's `proxy` field: `proxy not found:`). |
 | `no_permission`     | Subaccount does not have permission for this action. |
 | `limit_reached`     | Resource limit reached on the current subscription. |
 | `already_exists`    | Conflict — a record with the same key already exists. |
@@ -102,10 +102,10 @@ The `code` field on the business error envelope. Codes prefixed with a domain (`
 |------|---------|
 | `profiles.started`               | Profile is already running. |
 | `profiles.not_started`           | Profile is not running. |
-| `profiles.stop_error`            | Bulk force-stop had at least one failure. `data.failed` lists the offending UUIDs. |
+| `profiles.stop_error`            | Bulk force-stop stopped none of the profiles (`400`). `data.failed` lists the offending UUIDs. |
 | `profiles.consistency_error`     | `version` passed to `force_stop` does not match the server-side version. |
-| `profiles.update_error`          | Update payload was rejected. |
-| `profiles.password_error`        | Password set/clear failed (wrong `old_password` or missing password). |
+| `profiles.update_error`          | Update payload was rejected, e.g. `fingerprint.os` on `PATCH /profiles/{uuid}` (`You can't update os.`). |
+| `profiles.password_error`        | Password set/clear failed (wrong `old_password`/`password`, or a listed profile is running on another machine); nothing is changed. |
 | `profiles.invalid_cookie`        | Cookies field is not in JSON, Mozilla, or Netscape format. |
 | `profiles.transfer_error`        | Generic transfer failure. |
 | `profiles.transfer_no_receiver`  | `receiver_email` is not a member of the workspace. |

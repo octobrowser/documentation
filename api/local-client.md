@@ -9,8 +9,75 @@ Although the local API is unauthenticated, profile start/stop/password operation
 ## Prerequisites
 
 - Octo Browser desktop app installed and running.
-- The user is signed in (use [Login](#login) if you are scripting cold-start automation).
+- The user is signed in (use [Login](#login), or the `OCTO_API_TOKEN` environment variable described below, if you are scripting cold-start automation).
 - The local API server listens on `127.0.0.1:58888` only — no remote access.
+
+## Error Responses
+
+The local client uses two error shapes:
+
+- **Business errors** — `400` (or another 4xx/5xx noted per endpoint) with a string `code`, a human-readable `error`, and a legacy numeric `error_code`:
+
+  ```json
+  { "code": "profiles.not_found", "error": "Profile not found", "error_code": 6 }
+  ```
+
+  `error_code` is deprecated; for start errors it maps to the numeric table in [Start Error Codes](#start-error-codes). Prefer the string `code`.
+
+- **Validation errors** — `422` with a `detail` array describing the offending field:
+
+  ```json
+  { "detail": [{ "loc": ["body", "uuid"], "msg": "field required", "type": "value_error.missing" }] }
+  ```
+
+Unknown body fields are silently ignored.
+
+## Client Setup
+
+### Silent Installation
+
+```powershell
+& '.\Octo_Browser_latest_win.exe' /qn
+```
+
+```bash
+# macOS
+hdiutil attach ./Octo_Browser_latest_mac_arm64.dmg
+cp -R /Volumes/Octo\ Browser/Octo\ Browser.app /Applications
+hdiutil unmount /Volumes/Octo\ Browser
+```
+
+### Signing In With an API Token
+
+The desktop client reads the `OCTO_API_TOKEN` environment variable at startup and logs in automatically, so no interactive login (or [Login](#login) call) is needed.
+
+```powershell
+$env:OCTO_API_TOKEN = "YOUR_API_TOKEN"; start 'C:\Program Files\Octo Browser\Octo Browser.exe'
+```
+
+```bash
+# macOS
+OCTO_API_TOKEN="YOUR_API_TOKEN" open -a "Octo Browser"
+
+# Linux (from the folder containing the AppImage)
+OCTO_API_TOKEN=YOUR_API_TOKEN ./OctoBrowser.AppImage
+```
+
+### Running the Client Headless
+
+Set `OCTO_HEADLESS=1` to start the desktop client itself without a window (for servers and containers — see [docker.md](docker.md) for a complete Docker setup). This is independent of the per-profile `headless` flag below.
+
+```powershell
+$env:OCTO_HEADLESS = "1"; start 'C:\Program Files\Octo Browser\Octo Browser.exe'
+```
+
+```bash
+# macOS
+OCTO_HEADLESS=1 open -a "Octo Browser"
+
+# Linux (from the folder containing the AppImage)
+OCTO_HEADLESS=1 ./OctoBrowser.AppImage
+```
 
 ## Profile Control
 
@@ -48,10 +115,10 @@ curl -X GET http://localhost:58888/api/profiles/active
 **Request Body**:
 - `uuid` (string, required) — profile UUID.
 - `headless` (bool, optional, default `false`).
-- `debug_port` (bool | int, optional) — `true` allocates a random free port; an integer `1024–65534` pins a specific port.
-- `only_local` (bool, optional) — bind the debug port to `127.0.0.1` only.
-- `flags` (string[], optional) — extra Chromium switches. **Use sparingly.** Recommended values include `--disk-cache-dir=<path>` to keep cache between sessions and `--disable-backgrounding-occluded-windows` for parallel automation. Use `--remote-debugging-address=0.0.0.0` to expose the debug port to the LAN.
-- `timeout` (int, optional, seconds) — overrides the default start timeout; raise it for slow proxies.
+- `debug_port` (bool | int, optional, default `false`) — `true` allocates a random free port; an integer `1024–65534` pins a specific port.
+- `only_local` (bool, optional, default `true`) — bind the debug port to `127.0.0.1` only.
+- `flags` (string[], optional, default `[]`) — extra Chromium switches. **Use sparingly.** Recommended values include `--disk-cache-dir=<path>` to keep cache between sessions (by default the cache is cleared every time the profile closes; the path must be outside the profile folder, e.g. `["--disk-cache-dir=C:/Cache"]`) and `--disable-backgrounding-occluded-windows` for parallel automation. Use `--remote-debugging-address=0.0.0.0` to expose the debug port to the LAN.
+- `timeout` (int, optional, seconds, default `60`) — overrides the default start timeout; raise it for slow proxies.
 - `password` (string, optional) — profile password if one is set.
 - `profile_data` (object, optional) — overrides for selected profile fields, e.g. `{"images_load_limit": null}` (size in bytes).
 
@@ -84,9 +151,27 @@ curl -X POST http://localhost:58888/api/profiles/start \
 }
 ```
 
+#### Error Responses
+
+```json
+{ "code": "profiles.not_found", "error": "Profile not found", "error_code": 6 }
+```
+
+```json
+{ "code": "profiles.already_started", "error": "Profile is already started", "error_code": 2 }
+```
+
+```json
+{ "code": "profiles.proxy_error", "error": "Failed to get proxy data", "error_code": 4 }
+```
+
+A missing `uuid` returns `422` with a `detail` array (see [Error Responses](#error-responses)).
+
 #### Start Error Codes
 
-```
+Legacy numeric `error_code` values:
+
+```text
 1  ComponentNotFoundException
 2  ProfileAlreadyRunningException
 3  ProfileStartFailedException
@@ -142,14 +227,16 @@ curl -X POST http://localhost:58888/api/profiles/force_stop \
 
 Spin up a temporary profile that is not saved to the account. The full fingerprint/proxy/cookies payload is provided inline.
 
+One-time profiles are faster to create and start, are not synchronised to the cloud, and are removed when stopped, so they do not clutter the profile list — well suited to scraping-style workloads. Each call costs **4 requests** of the RPM/RPH budget (see [rate-limiting.md](rate-limiting.md)).
+
 **Endpoint**: `POST http://localhost:58888/api/profiles/one_time/start`
 
 **Request Body**:
-- `profile_data` (object, required) — same shape as `POST /profiles` body in [profiles.md](profiles.md), minus saved-only fields like `tags` and `pinned_tag`. Any field you omit is auto-generated.
-- `headless` (bool, optional, default `false`)
-- `debug_port` (bool | int, optional)
-- `flags` (string[], optional)
-- `timeout` (int, optional)
+- `profile_data` (object, required) — same shape as `POST /profiles` body in [profiles.md](profiles.md), minus saved-only fields like `tags` and `pinned_tag`. Any field you omit is auto-generated. In addition to `fingerprint` (including `noise`, `dns`, `media_devices`), `proxy` and `start_pages`, it may carry `extensions` (`"<id>@<version>"` strings), `local_cache` (bool) and inline `cookies[]` in Chrome-extension export shape (`domain`, `expirationDate`, `hostOnly`, `httpOnly`, `name`, `path`, `sameSite`, `secure`, `value`).
+- `headless` (bool, optional, default `true`) — note the default differs from [Start Profile](#start-profile).
+- `debug_port` (bool, optional, default `true`)
+- `flags` (string[], optional, default `[]`)
+- `timeout` (int, optional, seconds, default `60`)
 
 ```bash
 curl -X POST http://localhost:58888/api/profiles/one_time/start \
@@ -166,10 +253,28 @@ curl -X POST http://localhost:58888/api/profiles/one_time/start \
         "geolocation":{ "type": "ip" },
         "webrtc":     { "type": "ip" },
         "cpu": 4,
-        "ram": 8
+        "ram": 8,
+        "noise": { "webgl": true, "canvas": false, "audio": true, "client_rects": false },
+        "dns": "1.1.1.1",
+        "media_devices": { "video_in": 1, "audio_in": 1, "audio_out": 1 }
       },
+      "extensions": ["ewbjmajocgfcbeboaewbfgobmjsjcoja@1.0"],
       "proxy": { "type": "socks5", "host": "1.1.1.1", "port": 5555, "login": "", "password": "" },
-      "start_pages": ["https://fb.com"]
+      "start_pages": ["https://fb.com"],
+      "local_cache": true,
+      "cookies": [
+        {
+          "domain": ".google.com",
+          "expirationDate": 1639134293.313654,
+          "hostOnly": false,
+          "httpOnly": false,
+          "name": "1P_JAR",
+          "path": "/",
+          "sameSite": "no_restriction",
+          "secure": true,
+          "value": "2021-11-10-11"
+        }
+      ]
     },
     "headless": false,
     "debug_port": true,
@@ -195,7 +300,7 @@ curl -X POST http://localhost:58888/api/profiles/one_time/start \
 
 ### Set Profile Password (Local)
 
-Set or update the password protecting a single profile. Minimum length is 4 characters.
+Set or update the password protecting a single profile. Length must be 4–255 characters.
 
 **Endpoint**: `POST http://localhost:58888/api/profiles/password`
 
@@ -213,6 +318,14 @@ curl -X POST http://localhost:58888/api/profiles/password \
 
 ```json
 { "msg": "Profile password has been set" }
+```
+
+#### Error Responses
+
+`503`:
+
+```json
+{ "code": "profiles.password_change_failed", "error": "Failed to change profile password", "error_code": 1 }
 ```
 
 ### Delete Profile Password (Local)
@@ -237,19 +350,36 @@ curl -X DELETE http://localhost:58888/api/profiles/password \
 { "msg": "Profile password has been cleared" }
 ```
 
+#### Error Responses
+
+`400`:
+
+```json
+{ "code": "profiles.invalid_password", "error": "Profile password incorrect", "error_code": 1 }
+```
+
+```json
+{ "error": "Another profile's operation in progress", "error_code": 3 }
+```
+
+```json
+{ "error": "Failed to clear profile password", "error_code": 1 }
+```
+
 ## Auth
 
 Requires Octo Browser **1.8.0 or later**.
 
 ### Login
 
-Sign in the desktop app from a script.
+Sign in the desktop app from a script. Alternatively, launch the client with the `OCTO_API_TOKEN` environment variable set (see [Signing In With an API Token](#signing-in-with-an-api-token)).
 
 **Endpoint**: `POST http://localhost:58888/api/auth/login`
 
 **Request Body**:
 - `email` (string, required)
 - `password` (string, required)
+- `api_token` (string, optional)
 
 ```bash
 curl -X POST http://localhost:58888/api/auth/login \
@@ -311,9 +441,13 @@ curl -X GET http://localhost:58888/api/update
 { "current": "1.8.2", "latest": "1.8.3", "update_required": false }
 ```
 
+```json
+{ "current": "1.7.6", "latest": "1.8.3", "update_required": true }
+```
+
 ### Update Client
 
-Trigger an in-place update to the latest available version. Returns an error if the browser is already up to date.
+Trigger an in-place update to the latest available version. Returns `409` if the browser is already up to date.
 
 **Endpoint**: `POST http://localhost:58888/api/update`
 
@@ -325,6 +459,14 @@ curl -X POST http://localhost:58888/api/update
 
 ```json
 { "msg": "update to 1.8.3 triggerred successfully" }
+```
+
+#### Error Responses
+
+`409`:
+
+```json
+{ "code": "client.update_failed", "error": "Update is not triggered. No available version" }
 ```
 
 ## Python Example

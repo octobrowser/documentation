@@ -1,6 +1,6 @@
 # Tags API
 
-Tags are coloured labels attached to browser profiles. They are managed independently and referenced by UUID from profile payloads.
+Tags are coloured labels attached to browser profiles. They are managed independently and referenced **by name** (1–20 characters) from profile payloads; tag UUIDs are used only by `PATCH /tags/{uuid}` and `DELETE /tags/{uuid}`.
 
 All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": string | null }`.
 
@@ -81,7 +81,7 @@ curl -X POST "https://app.octobrowser.net/api/v2/automation/tags" \
 
 **Endpoint**: `PATCH /tags/{uuid}`
 
-Both `name` and `color` are optional; supply only the fields you want to change.
+Both `name` and `color` are optional; supply only the fields you want to change (e.g. `{"color":"red"}` alone is accepted). `name` is still limited to 1–20 characters. Returns HTTP `200 OK`.
 
 ```bash
 curl -X PATCH "https://app.octobrowser.net/api/v2/automation/tags/ab003313e690425cb1f01e67b9b3a5da" \
@@ -146,7 +146,7 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/profiles?page_len=10&
 
 ## Common Errors
 
-- **400 Bad Request** — invalid colour, missing `name`, or malformed UUID.
+- **400 Bad Request** — invalid colour, missing `name` on create, `name` longer than 20 characters (`string_too_long`), or malformed UUID.
 - **404 Not Found** — tag UUID does not exist.
 - **409 Conflict** — tag name already exists on the account.
 
