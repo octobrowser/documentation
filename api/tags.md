@@ -42,13 +42,16 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/tags" \
       "name": "octo",
       "color": "orange"
     }
-  ]
+  ],
+  "code": null
 }
 ```
 
 ## Create Tag
 
 **Endpoint**: `POST /tags`
+
+**Required permission:** Edit tags.
 
 Returns HTTP `201 Created`.
 
@@ -73,13 +76,16 @@ curl -X POST "https://app.octobrowser.net/api/v2/automation/tags" \
     "uuid": "ab003313e690425cb1f01e67b9b3a5da",
     "name": "supertag",
     "color": "blue"
-  }
+  },
+  "code": null
 }
 ```
 
 ## Update Tag
 
 **Endpoint**: `PATCH /tags/{uuid}`
+
+**Required permission:** Edit tags.
 
 Both `name` and `color` are optional; supply only the fields you want to change (e.g. `{"color":"red"}` alone is accepted). `name` is still limited to 1–20 characters. Returns HTTP `200 OK`.
 
@@ -100,13 +106,16 @@ curl -X PATCH "https://app.octobrowser.net/api/v2/automation/tags/ab003313e69042
     "uuid": "ab003313e690425cb1f01e67b9b3a5da",
     "name": "supertag1",
     "color": "orange"
-  }
+  },
+  "code": null
 }
 ```
 
 ## Remove Tag
 
 **Endpoint**: `DELETE /tags/{uuid}`
+
+**Required permission:** Edit tags.
 
 ```bash
 curl -X DELETE "https://app.octobrowser.net/api/v2/automation/tags/ab003313e690425cb1f01e67b9b3a5da" \
@@ -119,7 +128,8 @@ curl -X DELETE "https://app.octobrowser.net/api/v2/automation/tags/ab003313e6904
 {
   "success": true,
   "msg": "",
-  "data": null
+  "data": null,
+  "code": null
 }
 ```
 
@@ -147,6 +157,7 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/profiles?page_len=10&
 ## Common Errors
 
 - **400 Bad Request** — invalid colour, missing `name` on create, `name` longer than 20 characters (`string_too_long`), or malformed UUID.
+- **403 Forbidden** — `no_permission`: the API token lacks the Edit tags permission.
 - **404 Not Found** — tag UUID does not exist.
 - **409 Conflict** — tag name already exists on the account.
 

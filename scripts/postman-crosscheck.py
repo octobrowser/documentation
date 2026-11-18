@@ -14,7 +14,12 @@ api=pathlib.Path(sys.argv[3] if len(sys.argv)>3 else "api")
 FOLDER_PAGE={"Profiles":"profiles.md","Tags":"tags.md","Folders":"folders.md","Proxies":"proxies.md",
              "Local client API":"local-client.md","Teams":"teams.md","Fingerprint":"fingerprint.md",
              "Docker":"docker.md","Kubernetes":"docker.md","Automation Libraries":"automation.md",
-             "Snippets":"automation.md","Action Log":"teams.md"}
+             "Snippets":"automation.md","Action Log":"action-log.md","Proxy providers":"proxy-providers.md"}
+
+def top_folder(f):
+    # since 2026-11 the collection nests the cloud API under a "Public API" folder
+    parts=f.split(" / ")
+    return parts[1] if parts[0]=="Public API" and len(parts)>1 else parts[0]
 pages={p.name:p.read_text() for p in api.glob("*.md")}
 alltext="\n".join(pages.values())
 
@@ -49,8 +54,8 @@ def body_schema(op):
 
 missing=[]; rows=[]
 for r in inv:
-    if r["folder"].split(" / ")[0] in ("Automation Libraries","Snippets","Docker","Kubernetes"): continue
-    page=FOLDER_PAGE.get(r["folder"].split(" / ")[0],"")
+    if top_folder(r["folder"]) in ("Automation Libraries","Snippets","Docker","Kubernetes"): continue
+    page=FOLDER_PAGE.get(top_folder(r["folder"]),"")
     text=pages.get(page,"")
     sp,op=spec_op(r["path"],r["method"])
     issues=[]

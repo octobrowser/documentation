@@ -1,6 +1,6 @@
 # Rate Limiting
 
-The cloud API enforces a Requests-Per-Minute (RPM) and Requests-Per-Hour (RPH) budget. Limits are **shared across the whole team** — every subaccount's calls draw from the same bucket. Repeatedly ignoring `429` responses will cause us to enforce stricter limits on the team.
+The cloud API enforces a Requests-Per-Minute (RPM) and Requests-Per-Hour (RPH) budget. Limits are **shared across the whole team** — calls made with any of the team's API tokens (and by any subaccount) draw from the same bucket. Repeatedly ignoring `429` responses will cause us to enforce stricter limits on the team.
 
 ## Limits by Subscription
 
@@ -27,20 +27,49 @@ Local client API calls (`localhost:58888`) are charged against the same RPM/RPH 
 
 The following local requests are **not counted** toward the limits: List Active Profiles (`GET /api/profiles/active`), Login, Logout, Get Client Version, Update Client, and Username.
 
+## Cost of Failed Requests
+
+Responses with status `400`, `409` and `422` cost extra rate-limit points. Per the official API FAQ, a `400` costs 6 RPM and 1 RPH. Validate requests before sending them, and fix the request instead of retrying it unchanged.
+
 ## Rate Limit Headers
 
 Every cloud API response carries:
 
-```
-Retry-After: 0                  # seconds; 0 means you may send the next request now
-X-Ratelimit-Limit: 200          # current RPM limit
-X-Ratelimit-Limit-Hour: 3000    # current RPH limit
-X-Ratelimit-Remaining: 196      # remaining points this minute
-X-Ratelimit-Remaining-Hour: 2996 # remaining points this hour
-X-Ratelimit-Reset: 1671789217   # unix timestamp when the minute window resets
+```text
+Retry-After: 0                   # seconds; 0 means you may send the next request now
+X-Ratelimit-Limit: 100           # current RPM limit
+X-Ratelimit-Limit-Hour: 1500     # current RPH limit
+X-Ratelimit-Remaining: 98        # remaining points this minute
+X-Ratelimit-Remaining-Hour: 1460 # remaining points this hour
+X-Ratelimit-Reset: 1793102460    # unix timestamp when the minute window resets
 ```
 
 `X-Ratelimit-Remaining` is the authoritative signal — drop your request rate as it approaches `0`.
+
+Responses also carry the IETF draft `RateLimit` / `RateLimit-Policy` headers (live-verified 2026-11-18):
+
+```text
+RateLimit: per_1minute;r=98;t=17, per_1hour;r=1460;t=2057
+RateLimit-Policy: per_1minute;q=100;w=60, per_1hour;q=1500;w=3600
+```
+
+- `RateLimit`: per window, `r` = remaining points and `t` = seconds until the window resets. The values match `X-Ratelimit-Remaining` / `X-Ratelimit-Remaining-Hour`.
+- `RateLimit-Policy`: per window, `q` = quota (limit) and `w` = window length in seconds. The live header can list further policies after these two.
+
+## Reading the Current Budget
+
+[`GET /teams/subscription`](teams.md#get-subscription) returns the current budget in the body, which is handy before starting a large job:
+
+```json
+{
+  "rate_limits": {
+    "rpm": { "limit": 100, "remaining": 98, "reset_at": "2026-10-27T12:01:00" },
+    "rph": { "limit": 1500, "remaining": 1460, "reset_at": "2026-10-27T12:35:00" }
+  }
+}
+```
+
+`remaining` already counts this request. `reset_at` is ISO 8601 in **UTC** without a timezone suffix (like all timestamps in response bodies); `rpm.reset_at` equals `X-Ratelimit-Reset` converted to UTC.
 
 ## Handling 429 Responses
 
@@ -66,3 +95,4 @@ def request_with_retry(method, url, headers, **kwargs):
 3. **Cache lookups.** Don't call `GET /tags`, `GET /proxies`, or `GET /fingerprint/renderers` on every iteration.
 4. **One-time profiles cost 4×.** When scraping at volume, batch with saved profiles where possible.
 5. **Local client calls count too.** Profile start/stop/password operations on `localhost:58888` draw from the same team budget (see the point-cost table above); only the read-only client endpoints are free.
+6. **Don't retry failed requests blindly.** `400`/`409`/`422` responses cost extra points; fix the request first.

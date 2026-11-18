@@ -3,7 +3,7 @@
   "info": {
     "title": "Octobrowser API",
     "description": "Octo Browser cloud automation API. The Action Log WebSocket stream (wss://app.octobrowser.net/api/v2/automation/ws/action_log) is not expressible in OpenAPI 3.0 and is documented separately in api/action-log.md.",
-    "version": "2.0.10"
+    "version": "2.1.0"
   },
   "paths": {
     "/api/v2/automation/profiles": {
@@ -73,10 +73,87 @@
           {
             "required": false,
             "schema": {
-              "title": "Body"
+              "title": "Ordering",
+              "type": "string",
+              "enum": [
+                "created",
+                "-created",
+                "active",
+                "-active",
+                "title",
+                "-title"
+              ],
+              "default": "-created"
             },
-            "name": "body",
-            "in": "query"
+            "name": "ordering",
+            "in": "query",
+            "x-source": "docs.octobrowser.net markdown + official spec 2026-11 (not live-verified)"
+          },
+          {
+            "required": false,
+            "schema": {
+              "title": "Status",
+              "type": "integer",
+              "enum": [
+                0,
+                1,
+                2
+              ],
+              "nullable": true,
+              "description": "0 - not running, 1 - running, 2 - error."
+            },
+            "name": "status",
+            "in": "query",
+            "x-source": "docs.octobrowser.net markdown + official spec 2026-11 (not live-verified)"
+          },
+          {
+            "required": false,
+            "schema": {
+              "title": "Password",
+              "type": "boolean",
+              "nullable": true,
+              "description": "`true` returns only profiles with a password, `false` only profiles without; omit for all."
+            },
+            "name": "password",
+            "in": "query",
+            "x-source": "docs.octobrowser.net markdown + official spec 2026-11 (not live-verified)"
+          },
+          {
+            "required": false,
+            "schema": {
+              "title": "Proxies",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "nullable": true,
+              "description": "Proxy UUIDs, comma-separated (e.g. `proxies=<uuid1>,<uuid2>`), or the special token `@no-proxies-filter` to return only profiles without a proxy."
+            },
+            "name": "proxies",
+            "in": "query",
+            "style": "form",
+            "explode": false,
+            "x-source": "docs.octobrowser.net markdown (comma-separated) + official spec 2026-11 (array); not live-verified"
+          },
+          {
+            "required": false,
+            "schema": {
+              "title": "Origin Platforms",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "desktop",
+                  "android",
+                  "ios"
+                ]
+              },
+              "nullable": true,
+              "description": "Filter by profile origin."
+            },
+            "name": "origin_platforms",
+            "in": "query",
+            "x-source": "official spec 2026-11 (not live-verified); parameter encoding not verified"
           }
         ],
         "responses": {
@@ -90,12 +167,12 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -140,12 +217,12 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -157,7 +234,7 @@
           "profiles"
         ],
         "summary": "Delete Profiles",
-        "description": "Remove profiles by given list of uuids",
+        "description": "Delete profiles by uuid (1-100). `skip_trash_bin` defaults to true (permanent delete); false moves them to the trash bin. 200 does not mean all were deleted: check deleted_uuids. If nothing was deleted, returns 404 `not_found` with the four lists in `data`. Required token permission: Delete profiles. The request has a JSON body.",
         "operationId": "delete_profiles_api_v2_automation_profiles_delete",
         "requestBody": {
           "content": {
@@ -175,13 +252,33 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DefaultResp"
+                  "$ref": "#/components/schemas/BaseResponse_DeleteProfilesSerializer_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (validation_error envelope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission, or none of the profiles is accessible to the token (profiles.access_error)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorResponse"
                 }
               }
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "Nothing was deleted: 404 `not_found` (\"Profiles not found or active\") with the four lists in `data` (live-verified for the all-unknown case)",
             "content": {
               "application/json": {
                 "schema": {
@@ -199,18 +296,9 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "x-source": "live probe 2026-11-18"
       }
     },
     "/api/v2/automation/profiles/{uuid}": {
@@ -253,12 +341,12 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -309,7 +397,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProfileUpdateErrorResp"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ProfileUpdateErrorResp"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
                 }
               }
             }
@@ -330,16 +425,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProfileAlreadyStarted"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -392,7 +477,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ImportCookiesErrorResp"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ImportCookiesErrorResp"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
                 }
               }
             }
@@ -413,16 +505,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProfileAlreadyStarted"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -464,7 +546,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TransferErrorResp"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TransferErrorResp"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
                 }
               }
             }
@@ -478,16 +567,6 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
@@ -498,7 +577,7 @@
           "profiles"
         ],
         "summary": "Get Exported Profiles Paginate",
-        "description": "Return list of exported profile data",
+        "description": "Return list of exported profile data. The payload is nested: data = {data: [...], total, page}. Required token permission: Transfer profiles.",
         "operationId": "get_exported_profiles_paginate_api_v2_automation_profiles_export_get",
         "parameters": [
           {
@@ -532,7 +611,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DefaultResp"
+                  "$ref": "#/components/schemas/BaseResponse_ExportProfilesSerializer_"
                 }
               }
             }
@@ -547,24 +626,25 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
           }
-        }
+        },
+        "x-source": "live probe 2026-11-18 (nested data envelope)"
       },
       "post": {
         "tags": [
           "profiles"
         ],
         "summary": "Export Profiles",
-        "description": "Export profiles by given list of uuids, with or without profiles proxies.\nOnly existing profiles will be exported.\nExported files will be allowed from Get /export endpoint",
+        "description": "Export profiles by given list of uuids, with or without profiles proxies (export_proxy is required).\nOnly existing profiles will be exported.\nExported files will be allowed from Get /export endpoint",
         "operationId": "export_profiles_api_v2_automation_profiles_export_post",
         "requestBody": {
           "content": {
@@ -582,17 +662,34 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DefaultResp"
+                  "$ref": "#/components/schemas/BaseResponse_ExportProfilesDataSerializer_"
+                }
+              }
+            }
+          },
+          "207": {
+            "description": "Some profiles were not exported: see failed (per official spec, not live-verified)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse_ExportProfilesDataSerializer_"
                 }
               }
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Bad Request or validation error (e.g. extra field app_version, missing export_proxy)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BaseErrorResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BaseErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
                 }
               }
             }
@@ -616,18 +713,9 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "x-source": "live probe 2026-11-18 (app_version removed, export_proxy required)"
       }
     },
     "/api/v2/automation/profiles/export/{uuid}": {
@@ -679,12 +767,162 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/automation/profiles/trash_bin": {
+      "get": {
+        "tags": [
+          "profiles"
+        ],
+        "summary": "Get Trash Bin",
+        "description": "List profiles in the trash bin (deleted with `skip_trash_bin: false`), paginated with total_count and page. Required token permission: Delete profiles.",
+        "operationId": "get_trash_bin_api_v2_automation_profiles_trash_bin_get",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18",
+        "parameters": [
+          {
+            "required": false,
+            "schema": {
+              "title": "Page",
+              "minimum": 0.0,
+              "type": "integer",
+              "default": 0
+            },
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "required": false,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/AllowedPageLen"
+                }
+              ],
+              "default": 10
+            },
+            "name": "page_len",
+            "in": "query"
+          },
+          {
+            "required": false,
+            "schema": {
+              "title": "Search",
+              "minLength": 1,
+              "type": "string"
+            },
+            "name": "search",
+            "in": "query",
+            "description": "Search by profile title. An empty value returns 400."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrashBinSerializer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (e.g. page_len not in 10/25/50/100, empty search)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: the API token lacks the required permission (no_permission)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoPermissionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/automation/profiles/trash_bin/restore": {
+      "post": {
+        "tags": [
+          "profiles"
+        ],
+        "summary": "Restore Profiles",
+        "description": "Restore profiles from the trash bin (1-100 uuids). Required token permission: Delete profiles. If nothing was restored the API returns 400 profiles.restore_error with the three uuid lists in data. Profiles whose restore would cost tokens are listed in payment_required_uuids and must be restored in the client.",
+        "operationId": "restore_trash_bin_api_v2_automation_profiles_trash_bin_restore_post",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreProfilesValidator"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse_RestoreProfilesSerializer_"
+                }
+              }
+            }
+          },
+          "207": {
+            "description": "Some profiles were not restored: see payment_required_uuids and not_found_uuids (per official spec, not live-verified)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse_RestoreProfilesSerializer_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Nothing restored (profiles.restore_error, data populated) or validation error (e.g. empty uuids)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RestoreProfilesErrorResp"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission, or restoring would exceed the plan's profile limit (profiles.maximum_saved_error; nothing restored)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorResponse"
                 }
               }
             }
@@ -736,7 +974,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BaseErrorResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BaseErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
                 }
               }
             }
@@ -750,16 +995,6 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
@@ -770,7 +1005,7 @@
           "profiles"
         ],
         "summary": "Force Stop Profile",
-        "description": "Stop profile without syncing data",
+        "description": "Stop profile without syncing data; unsynced changes are lost. `version` is required: pass the running session version for a consistency check, or `null` to stop the current session.",
         "operationId": "force_stop_profile_api_v2_automation_profiles__uuid__force_stop_post",
         "parameters": [
           {
@@ -815,7 +1050,7 @@
             }
           },
           "409": {
-            "description": "Conflict",
+            "description": "Conflict: `version` does not match the running session (profiles.consistency_error), or the profile is not running (profiles.not_started, \"Profile is not started\")",
             "content": {
               "application/json": {
                 "schema": {
@@ -824,17 +1059,18 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
           }
-        }
+        },
+        "x-source": "live probe 2026-11-18"
       }
     },
     "/api/v2/automation/profiles/force_stop": {
@@ -843,9 +1079,9 @@
           "profiles"
         ],
         "summary": "Bulk Force Stop Profiles",
-        "description": "Force-stop several profiles in one call. On partial failure returns 400 with code profiles.stop_error and data.failed listing UUIDs that could not be stopped.",
+        "description": "Force-stop several profiles in one call. Takes no `version` and performs no consistency check. data.failed lists UUIDs that were not stopped: 207 when only some were stopped, 400 with code profiles.stop_error when none were stopped.",
         "operationId": "bulk_force_stop_profiles_api_v2_automation_profiles_force_stop_post",
-        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; in official OpenAPI spec since 2026-11",
         "requestBody": {
           "required": true,
           "content": {
@@ -867,8 +1103,18 @@
               }
             }
           },
+          "207": {
+            "description": "Multi-Status: only some profiles were stopped; see data.failed (official spec 2026-11 and Postman, not live-verified)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkForceStopFailure"
+                }
+              }
+            }
+          },
           "400": {
-            "description": "Partial or total failure",
+            "description": "None were stopped (profiles.stop_error); data.failed lists them",
             "content": {
               "application/json": {
                 "schema": {
@@ -914,17 +1160,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProfilePasswordErrorResp"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ProfilePasswordErrorResp"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
                 }
               }
             }
@@ -977,17 +1220,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProfilePasswordErrorResp"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ProfilePasswordErrorResp"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
                 }
               }
             }
@@ -1064,12 +1304,12 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -1127,12 +1367,12 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -1198,12 +1438,12 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -1230,12 +1470,12 @@
               }
             }
           },
-          "422": {
-            "description": "Validation error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BaseErrorResponse"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -1270,12 +1510,12 @@
               }
             }
           },
-          "422": {
-            "description": "Validation error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BaseErrorResponse"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -1313,12 +1553,12 @@
               }
             }
           },
-          "422": {
-            "description": "Validation error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BaseErrorResponse"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -1364,12 +1604,12 @@
               }
             }
           },
-          "422": {
-            "description": "Validation error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BaseErrorResponse"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -1383,7 +1623,7 @@
           "proxies"
         ],
         "summary": "Get Proxies",
-        "description": "Return list of permanent proxies.",
+        "description": "Return list of permanent proxies (not provider proxies). Every item carries conf, vpn_protocol, syn_mode and external_id (null on non-VPN proxies); VPN items return conf in full.",
         "operationId": "get_proxies_api_v2_automation_proxies_get",
         "responses": {
           "200": {
@@ -1396,20 +1636,28 @@
               }
             }
           }
-        }
+        },
+        "x-source": "live probe 2026-11-18"
       },
       "post": {
         "tags": [
           "proxies"
         ],
         "summary": "Create Proxy",
-        "description": "Create not temp proxy only if account has enough slots to create the new one",
+        "description": "Create not temp proxy only if account has enough slots to create the new one. Body is a regular proxy or a VPN proxy (`type: \"vpn\"` + base64 `conf`). Required token permission: Create proxies.",
         "operationId": "create_proxy_api_v2_automation_proxies_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProxyCreateRequest"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ProxyCreateRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CreateVpnProxyValidator"
+                  }
+                ]
               }
             }
           },
@@ -1426,6 +1674,16 @@
               }
             }
           },
+          "400": {
+            "description": "Validation error (validation_error envelope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -1435,18 +1693,9 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
-        }
+        },
+        "x-source": "official spec 2026-11 + live probe 2026-11-18 (VPN create -> 201)"
       }
     },
     "/api/v2/automation/proxies/{uuid}": {
@@ -1455,7 +1704,7 @@
           "proxies"
         ],
         "summary": "Remove Proxy",
-        "description": "Remove proxy by given uuid",
+        "description": "Remove proxy by given uuid. Returns `data: null`. Required token permission: Delete proxies.",
         "operationId": "remove_proxy_api_v2_automation_proxies__uuid__delete",
         "parameters": [
           {
@@ -1474,7 +1723,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DefaultResp"
+                  "$ref": "#/components/schemas/BaseResponse_NoneType_"
                 }
               }
             }
@@ -1499,24 +1748,25 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
           }
-        }
+        },
+        "x-source": "live probe 2026-11-18"
       },
       "patch": {
         "tags": [
           "proxies"
         ],
         "summary": "Update Proxy",
-        "description": "Update given parameters for proxy by uuid",
+        "description": "Update given parameters for proxy by uuid. Regular or VPN form; connection fields on a VPN proxy return 400 proxy.vpn_field_not_applicable. The response omits title and profiles_count for VPN proxies. Required token permission: Edit proxies.",
         "operationId": "update_proxy_api_v2_automation_proxies__uuid__patch",
         "parameters": [
           {
@@ -1533,7 +1783,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProxyUpdate"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ProxyUpdate"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UpdateVpnProxyValidator"
+                  }
+                ]
               }
             }
           },
@@ -1545,7 +1802,24 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProxyResponse"
+                  "$ref": "#/components/schemas/ProxyUpdateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request (e.g. proxy.vpn_field_not_applicable) or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BaseErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
                 }
               }
             }
@@ -1569,13 +1843,700 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
+          }
+        },
+        "x-source": "live probe 2026-11-18"
+      }
+    },
+    "/api/v2/automation/proxy_providers": {
+      "get": {
+        "tags": [
+          "proxy_providers"
+        ],
+        "summary": "Get Proxy Providers",
+        "description": "Proxy providers built into Octo Browser (Proxy Shop) available to the team. Not paginated.",
+        "operationId": "list_proxy_providers_api_v2_automation_proxy_providers_get",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/BaseResponse_list_ProxyProviderSerializer__"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/automation/proxy_providers/proxies": {
+      "get": {
+        "tags": [
+          "proxy_providers"
+        ],
+        "summary": "Get Provider Proxies",
+        "description": "Team proxies bought from proxy providers, paginated with total_count and page. Filter by provider and kind.",
+        "operationId": "list_provider_proxies_api_v2_automation_proxy_providers_proxies_get",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18",
+        "parameters": [
+          {
+            "required": false,
+            "schema": {
+              "title": "Page",
+              "minimum": 0.0,
+              "type": "integer",
+              "default": 0
+            },
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "required": false,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/AllowedPageLen"
+                }
+              ],
+              "default": 10
+            },
+            "name": "page_len",
+            "in": "query"
+          },
+          {
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 36,
+              "title": "Provider"
+            },
+            "name": "provider",
+            "in": "query",
+            "description": "Provider `uuid` from GET /proxy_providers."
+          },
+          {
+            "required": false,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/ProxyKind"
+                }
+              ]
+            },
+            "name": "kind",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetProviderProxiesSerializer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (validation_error envelope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "proxy_providers"
+        ],
+        "summary": "Create Provider Proxies",
+        "description": "Buy 1-100 proxies from a proxy provider; consumes the team's traffic for that provider. Take country, region, city and ISP codes from the location endpoints (region/city/isp optional; isp is mobile only). Required token permission: Create paid proxies.",
+        "operationId": "create_provider_proxies_api_v2_automation_proxy_providers_proxies_post",
+        "x-source": "official spec 2026-11 + Postman 2026-11; success path not live-tested (purchases proxies), validation errors live probe 2026-11-18",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProviderProxiesValidator"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse_list_ProviderProxySerializer__"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No traffic left (proxy_providers.empty_balance), kind not offered (proxy_providers.invalid), provider unavailable or invalid location (bad_request), or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BaseErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission, or plan limit of provider proxies reached (proxy.limit_reached)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/automation/proxy_providers/proxies/{proxy_uuid}": {
+      "patch": {
+        "tags": [
+          "proxy_providers"
+        ],
+        "summary": "Update Provider Proxy",
+        "description": "Rename a provider proxy; only title can be changed. Required token permission: Edit proxies.",
+        "operationId": "update_provider_proxy_api_v2_automation_proxy_providers_proxies__proxy_uuid__patch",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18 (unknown uuid -> 404)",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 36,
+              "title": "Proxy Uuid"
+            },
+            "name": "proxy_uuid",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProviderProxyValidator"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse_ProviderProxySerializer_"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (validation_error envelope)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFundResp"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "proxy_providers"
+        ],
+        "summary": "Delete Provider Proxy",
+        "description": "Delete a provider proxy. Returns `data: null`. Required token permission: Delete proxies.",
+        "operationId": "delete_provider_proxy_api_v2_automation_proxy_providers_proxies__proxy_uuid__delete",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18 (unknown uuid -> 404)",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 36,
+              "title": "Proxy Uuid"
+            },
+            "name": "proxy_uuid",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse_NoneType_"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFundResp"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/automation/proxy_providers/{provider_uuid}/{kind}/countries": {
+      "get": {
+        "tags": [
+          "proxy_providers"
+        ],
+        "summary": "Get Countries",
+        "description": "Countries where the provider offers proxies of the given kind. Codes are provider-specific; pass them back exactly as returned.",
+        "operationId": "list_countries_api_v2_automation_proxy_providers__provider_uuid___kind__countries_get",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 36,
+              "title": "Provider Uuid"
+            },
+            "name": "provider_uuid",
+            "in": "path",
+            "description": "Provider `uuid` from GET /proxy_providers."
+          },
+          {
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProxyKind"
+            },
+            "name": "kind",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse_list_CountrySerializer__"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown/unavailable provider (proxy_providers.not_exists), kind not offered by the provider (proxy_providers.invalid), provider API error (bad_request), or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BaseErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/automation/proxy_providers/{provider_uuid}/mobile/countries/{country_code}/isps": {
+      "get": {
+        "tags": [
+          "proxy_providers"
+        ],
+        "summary": "Get Mobile ISPs",
+        "description": "Mobile carriers (ISPs) of the provider in the country. Codes are provider-specific; pass them back exactly as returned.",
+        "operationId": "list_mobile_isps_api_v2_automation_proxy_providers__provider_uuid__mobile_countries__country_code__isps_get",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 36,
+              "title": "Provider Uuid"
+            },
+            "name": "provider_uuid",
+            "in": "path",
+            "description": "Provider `uuid` from GET /proxy_providers."
+          },
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Country Code"
+            },
+            "name": "country_code",
+            "in": "path",
+            "description": "`code` from Get Countries, case-sensitive (e.g. `US`; `us` returns an empty list)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse_list_IspSerializer__"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown/unavailable provider (proxy_providers.not_exists), kind not offered by the provider (proxy_providers.invalid), provider API error (bad_request), or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BaseErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/automation/proxy_providers/{provider_uuid}/mobile/countries/{country_code}/isps/{isp_code}/regions": {
+      "get": {
+        "tags": [
+          "proxy_providers"
+        ],
+        "summary": "Get Mobile Regions",
+        "description": "Regions where the mobile carrier is available in the country. Codes are provider-specific; pass them back exactly as returned.",
+        "operationId": "list_mobile_regions_api_v2_automation_proxy_providers__provider_uuid__mobile_countries__country_code__isps__isp_code__regions_get",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 36,
+              "title": "Provider Uuid"
+            },
+            "name": "provider_uuid",
+            "in": "path",
+            "description": "Provider `uuid` from GET /proxy_providers."
+          },
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Country Code"
+            },
+            "name": "country_code",
+            "in": "path",
+            "description": "`code` from Get Countries, case-sensitive (e.g. `US`; `us` returns an empty list)."
+          },
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Isp Code"
+            },
+            "name": "isp_code",
+            "in": "path",
+            "description": "`code` from Get Mobile ISPs."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse_list_RegionSerializer__"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown/unavailable provider (proxy_providers.not_exists), kind not offered by the provider (proxy_providers.invalid), provider API error (bad_request), or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BaseErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/automation/proxy_providers/{provider_uuid}/mobile/countries/{country_code}/isps/{isp_code}/regions/{region_code}/cities": {
+      "get": {
+        "tags": [
+          "proxy_providers"
+        ],
+        "summary": "Get Mobile Cities",
+        "description": "Cities where the mobile carrier is available in the region. Codes are provider-specific; pass them back exactly as returned.",
+        "operationId": "list_mobile_cities_api_v2_automation_proxy_providers__provider_uuid__mobile_countries__country_code__isps__isp_code__regions__region_code__cities_get",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 36,
+              "title": "Provider Uuid"
+            },
+            "name": "provider_uuid",
+            "in": "path",
+            "description": "Provider `uuid` from GET /proxy_providers."
+          },
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Country Code"
+            },
+            "name": "country_code",
+            "in": "path",
+            "description": "`code` from Get Countries, case-sensitive (e.g. `US`; `us` returns an empty list)."
+          },
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Isp Code"
+            },
+            "name": "isp_code",
+            "in": "path",
+            "description": "`code` from Get Mobile ISPs."
+          },
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Region Code"
+            },
+            "name": "region_code",
+            "in": "path",
+            "description": "`code` from the regions endpoint."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse_list_CitySerializer__"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown/unavailable provider (proxy_providers.not_exists), kind not offered by the provider (proxy_providers.invalid), provider API error (bad_request), or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BaseErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/automation/proxy_providers/{provider_uuid}/residential/countries/{country_code}/regions": {
+      "get": {
+        "tags": [
+          "proxy_providers"
+        ],
+        "summary": "Get Residential Regions",
+        "description": "Regions where the provider offers residential proxies in the country (may be empty). Codes are provider-specific; pass them back exactly as returned.",
+        "operationId": "list_residential_regions_api_v2_automation_proxy_providers__provider_uuid__residential_countries__country_code__regions_get",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 36,
+              "title": "Provider Uuid"
+            },
+            "name": "provider_uuid",
+            "in": "path",
+            "description": "Provider `uuid` from GET /proxy_providers."
+          },
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Country Code"
+            },
+            "name": "country_code",
+            "in": "path",
+            "description": "`code` from Get Countries, case-sensitive (e.g. `US`; `us` returns an empty list)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse_list_RegionSerializer__"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown/unavailable provider (proxy_providers.not_exists), kind not offered by the provider (proxy_providers.invalid), provider API error (bad_request), or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BaseErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/automation/proxy_providers/{provider_uuid}/residential/countries/{country_code}/regions/{region_code}/cities": {
+      "get": {
+        "tags": [
+          "proxy_providers"
+        ],
+        "summary": "Get Residential Cities",
+        "description": "Cities where the provider offers residential proxies in the region. Codes are provider-specific; pass them back exactly as returned.",
+        "operationId": "list_residential_cities_api_v2_automation_proxy_providers__provider_uuid__residential_countries__country_code__regions__region_code__cities_get",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 36,
+              "title": "Provider Uuid"
+            },
+            "name": "provider_uuid",
+            "in": "path",
+            "description": "Provider `uuid` from GET /proxy_providers."
+          },
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Country Code"
+            },
+            "name": "country_code",
+            "in": "path",
+            "description": "`code` from Get Countries, case-sensitive (e.g. `US`; `us` returns an empty list)."
+          },
+          {
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Region Code"
+            },
+            "name": "region_code",
+            "in": "path",
+            "description": "`code` from the regions endpoint."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse_list_CitySerializer__"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown/unavailable provider (proxy_providers.not_exists), kind not offered by the provider (proxy_providers.invalid), provider API error (bad_request), or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BaseErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ValidationErrorResponse"
+                    }
+                  ]
                 }
               }
             }
@@ -1654,12 +2615,12 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -1714,12 +2675,12 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -1735,7 +2696,7 @@
         "summary": "Get Device Models",
         "description": "List Android device models usable for mobile fingerprints. The response is not paginated; all models are returned.",
         "operationId": "get_device_models_api_v2_automation_fingerprint_device_models_get",
-        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; in official OpenAPI spec since 2026-11",
         "parameters": [
           {
             "required": false,
@@ -1758,6 +2719,29 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DeviceModelsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/automation/fingerprint/platforms": {
+      "get": {
+        "tags": [
+          "fingerprint"
+        ],
+        "summary": "Get Platforms",
+        "description": "List supported fingerprint platforms: valid os / os_arch / os_version combinations for profile creation. Not paginated; query parameters are ignored. iOS is not listed (iOS profiles cannot be created via the API).",
+        "operationId": "get_platforms_api_v2_automation_fingerprint_platforms_get",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse_list_SupportedPlatformSerializer__"
                 }
               }
             }
@@ -1790,13 +2774,13 @@
             "schema": {
               "title": "Limit",
               "maximum": 100.0,
-              "exclusiveMinimum": true,
+              "minimum": 1.0,
               "type": "integer",
-              "default": 25,
-              "minimum": 0.0
+              "default": 25
             },
             "name": "limit",
-            "in": "query"
+            "in": "query",
+            "x-source": "official spec 2026-11 (default 25, 1-100)"
           }
         ],
         "responses": {
@@ -1810,12 +2794,12 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Validation error (cloud API returns 400, not 422)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -1827,7 +2811,7 @@
           "teams"
         ],
         "summary": "Delete Extensions",
-        "description": "Delete team's extensions by given list of uuids",
+        "description": "Delete team's extensions by given list of uuids (`<id>@<version>` as returned by GET /teams/extensions). Unknown but well-formed ids are silently ignored (per Postman); 200 does not mean anything was deleted. Required token permission: Delete extensions. The request has a JSON body.",
         "operationId": "delete_extensions_api_v2_automation_teams_extensions_delete",
         "requestBody": {
           "content": {
@@ -1850,17 +2834,18 @@
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "400": {
+            "description": "Validation error, e.g. malformed extension id",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
           }
-        }
+        },
+        "x-source": "live probe 2026-11-18 (malformed id -> 400 \"Incorrect extension ids\")"
       }
     },
     "/api/v2/automation/teams/subaccounts": {
@@ -1871,7 +2856,7 @@
         "summary": "Get Subaccounts",
         "description": "List the team's members.",
         "operationId": "get_subaccounts_api_v2_automation_teams_subaccounts_get",
-        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; in official OpenAPI spec since 2026-11",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1890,9 +2875,9 @@
           "teams"
         ],
         "summary": "Create Subaccount",
-        "description": "Invite a new member; the subaccount activates once the emailed invite is accepted. Omitted permissions default to false.",
+        "description": "Invite a new member; the subaccount activates once the emailed invite is accepted. `permissions` is required (omitted individual permissions default to false).",
         "operationId": "create_subaccount_api_v2_automation_teams_subaccounts_post",
-        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; in official OpenAPI spec since 2026-11; permissions required per live probe 2026-11-18",
         "requestBody": {
           "required": true,
           "content": {
@@ -1915,11 +2900,11 @@
             }
           },
           "400": {
-            "description": "Validation error (400 with validation_error envelope)",
+            "description": "Validation error (validation_error envelope), e.g. missing permissions or invalid email",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BaseErrorResponse"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -1933,7 +2918,7 @@
         "summary": "Update Subaccount",
         "description": "Replace a subaccount's permission set (identified by email). Omitted permissions default to false.",
         "operationId": "update_subaccount_api_v2_automation_teams_subaccounts_patch",
-        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; in official OpenAPI spec since 2026-11",
         "requestBody": {
           "required": true,
           "content": {
@@ -1956,11 +2941,11 @@
             }
           },
           "400": {
-            "description": "Validation error (400 with validation_error envelope)",
+            "description": "Validation error (validation_error envelope), e.g. missing permissions or invalid email",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BaseErrorResponse"
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -1974,7 +2959,7 @@
         "summary": "Delete Subaccount",
         "description": "Remove a team member by email.",
         "operationId": "delete_subaccount_api_v2_automation_teams_subaccounts_delete",
-        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; in official OpenAPI spec since 2026-11",
         "requestBody": {
           "required": true,
           "content": {
@@ -2017,7 +3002,7 @@
         "summary": "Get Invites",
         "description": "List pending, not yet accepted invitations.",
         "operationId": "get_invites_api_v2_automation_teams_invites_get",
-        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; in official OpenAPI spec since 2026-11",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2038,7 +3023,7 @@
         "summary": "Delete Invite",
         "description": "Cancel a pending invitation by recipient email.",
         "operationId": "delete_invite_api_v2_automation_teams_invites_delete",
-        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; absent from official OpenAPI spec",
+        "x-source": "docs.octobrowser.net markdown + live probe 2026-08-17; in official OpenAPI spec since 2026-11",
         "requestBody": {
           "required": true,
           "content": {
@@ -2066,6 +3051,29 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DefaultResp"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/automation/teams/subscription": {
+      "get": {
+        "tags": [
+          "teams"
+        ],
+        "summary": "Get Subscription",
+        "description": "Current plan, expiration, team balance, profile / team member / API token usage and the current rate-limit budget (rpm, rph). No specific token permission required. Dates are UTC without timezone suffix.",
+        "operationId": "get_subscription_api_v2_automation_teams_subscription_get",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse_SubscriptionInfoSerializer_"
                 }
               }
             }
@@ -2200,6 +3208,88 @@
         ],
         "title": "BaseResponse[FolderSerializer]"
       },
+      "BaseResponse_DeleteProfilesSerializer_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "$ref": "#/components/schemas/DeleteProfilesSerializer"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[DeleteProfilesSerializer]"
+      },
+      "BaseResponse_ExportProfilesDataSerializer_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "$ref": "#/components/schemas/ExportProfilesDataSerializer"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[ExportProfilesDataSerializer]"
+      },
+      "BaseResponse_ExportProfilesSerializer_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "$ref": "#/components/schemas/ExportProfilesSerializer"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[ExportProfilesSerializer]",
+        "x-source": "live probe 2026-11-18"
+      },
       "BaseResponse_NoneType_": {
         "properties": {
           "success": {
@@ -2216,6 +3306,11 @@
             "type": "object",
             "nullable": true,
             "title": "Data"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true,
+            "title": "Code"
           }
         },
         "type": "object",
@@ -2223,6 +3318,304 @@
           "data"
         ],
         "title": "BaseResponse[NoneType]"
+      },
+      "BaseResponse_ProviderProxySerializer_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProviderProxySerializer"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[ProviderProxySerializer]"
+      },
+      "BaseResponse_RestoreProfilesSerializer_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "$ref": "#/components/schemas/RestoreProfilesSerializer"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[RestoreProfilesSerializer]"
+      },
+      "BaseResponse_SubscriptionInfoSerializer_": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "$ref": "#/components/schemas/SubscriptionInfoSerializer"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[SubscriptionInfoSerializer]"
+      },
+      "BaseResponse_list_CitySerializer__": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CitySerializer"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[list[CitySerializer]]"
+      },
+      "BaseResponse_list_CountrySerializer__": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CountrySerializer"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[list[CountrySerializer]]"
+      },
+      "BaseResponse_list_IspSerializer__": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/IspSerializer"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[list[IspSerializer]]"
+      },
+      "BaseResponse_list_ProviderProxySerializer__": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderProxySerializer"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[list[ProviderProxySerializer]]"
+      },
+      "BaseResponse_list_ProxyProviderSerializer__": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ProxyProviderSerializer"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[list[ProxyProviderSerializer]]"
+      },
+      "BaseResponse_list_RegionSerializer__": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/RegionSerializer"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[list[RegionSerializer]]"
+      },
+      "BaseResponse_list_SupportedPlatformSerializer__": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SupportedPlatformSerializer"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "BaseResponse[list[SupportedPlatformSerializer]]"
       },
       "BaseResponselistFolderSerializer": {
         "properties": {
@@ -2349,12 +3742,34 @@
           11,
           12,
           14,
+          15,
           16,
+          18,
           20,
-          24
+          24,
+          32
         ],
         "type": "integer",
-        "description": "An enumeration."
+        "description": "An enumeration.",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18"
+      },
+      "CitySerializer": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "CitySerializer"
       },
       "ClearProfilePasswordRequestAutomation": {
         "title": "ClearProfilePasswordRequestAutomation",
@@ -2406,6 +3821,24 @@
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
       },
+      "CountrySerializer": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "CountrySerializer"
+      },
       "CreateFolderValidator": {
         "properties": {
           "name": {
@@ -2449,6 +3882,155 @@
           "folders"
         ],
         "title": "CreateFoldersValidator"
+      },
+      "CreateProfileVpnProxyValidator": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "enum": [
+              "vpn"
+            ]
+          },
+          "vpn_protocol": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VPNProtocol"
+              }
+            ],
+            "default": "wireguard"
+          },
+          "conf": {
+            "type": "string",
+            "maxLength": 21848,
+            "minLength": 1,
+            "title": "Conf"
+          },
+          "syn_mode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VPNSynMode"
+              }
+            ],
+            "default": "profile_based"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "conf"
+        ],
+        "title": "CreateProfileVpnProxyValidator",
+        "description": "VPN (WireGuard/AmneziaWG) proxy bound to this profile only. `conf` is the base64-encoded config text with an `Endpoint = host:port` line. The profile's proxy is then returned with `uuid: \"\"`, `type: \"vpn\"` and without `conf`; it is not listed in GET /proxies.",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18"
+      },
+      "CreateProviderProxiesValidator": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Provider",
+            "description": "Provider `uuid` from `GET /proxy_providers`."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ProxyKind"
+          },
+          "country_code": {
+            "type": "string",
+            "title": "Country Code",
+            "description": "`code` from Get Countries (case-sensitive)."
+          },
+          "region_code": {
+            "type": "string",
+            "title": "Region Code",
+            "nullable": true,
+            "description": "Optional; `code` from Get Mobile/Residential Regions."
+          },
+          "city_code": {
+            "type": "string",
+            "title": "City Code",
+            "nullable": true,
+            "description": "Optional; `code` from Get Mobile/Residential Cities."
+          },
+          "isp_code": {
+            "type": "string",
+            "title": "Isp Code",
+            "nullable": true,
+            "description": "Optional, mobile only; `code` from Get Mobile ISPs."
+          },
+          "quantity": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Quantity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "kind",
+          "country_code",
+          "quantity"
+        ],
+        "title": "CreateProviderProxiesValidator",
+        "x-source": "official spec 2026-11 + Postman 2026-11; validation (quantity, missing country_code) live probe 2026-11-18"
+      },
+      "CreateVpnProxyValidator": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "enum": [
+              "vpn"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "external_id": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "External Id",
+            "nullable": true
+          },
+          "vpn_protocol": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VPNProtocol"
+              }
+            ],
+            "default": "wireguard"
+          },
+          "conf": {
+            "type": "string",
+            "maxLength": 21848,
+            "minLength": 1,
+            "title": "Conf"
+          },
+          "syn_mode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VPNSynMode"
+              }
+            ],
+            "default": "profile_based"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "conf"
+        ],
+        "title": "CreateVpnProxyValidator",
+        "description": "VPN (WireGuard/AmneziaWG) proxy. conf = base64-encoded config text (up to 16 KB raw) that must contain an `Endpoint = host:port` line; host and port are parsed from it. host/port/login/password/change_ip_url are not accepted (400 extra_forbidden).",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18"
       },
       "DefaultResp": {
         "title": "DefaultResp",
@@ -2530,11 +4112,54 @@
           "skip_trash_bin": {
             "title": "Skip Trash Bin",
             "type": "boolean",
-            "default": true
+            "default": true,
+            "description": "true (default) deletes permanently; false moves the profiles to the trash bin.",
+            "x-source": "live probe 2026-11-18"
           }
         },
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
+      },
+      "DeleteProfilesSerializer": {
+        "properties": {
+          "deleted_uuids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Deleted Uuids"
+          },
+          "active_uuids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Active Uuids"
+          },
+          "protected_uuids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Protected Uuids"
+          },
+          "not_found_uuids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Not Found Uuids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted_uuids",
+          "active_uuids",
+          "protected_uuids",
+          "not_found_uuids"
+        ],
+        "title": "DeleteProfilesSerializer",
+        "description": "active_uuids: running, not deleted; protected_uuids: protected against deletion via API (Octo 3.2), not deleted; not_found_uuids: not in the team or not accessible to the token."
       },
       "DeviceModelOut": {
         "title": "DeviceModelOut",
@@ -2646,7 +4271,19 @@
           "fingerprints.invalid",
           "subscriptions.inactive",
           "proxy_providers.empty_balance",
-          "proxy.maximum_saved_error"
+          "proxy.maximum_saved_error",
+          "bad_request",
+          "validation_error",
+          "api_token",
+          "profiles.access_error",
+          "profiles.maximum_saved_error",
+          "profiles.restore_error",
+          "fingerprints.invalid_mobile_model",
+          "fingerprints.invalid_mobile_type",
+          "proxy_providers.not_exists",
+          "proxy_providers.invalid",
+          "proxy.limit_reached",
+          "proxy.vpn_field_not_applicable"
         ],
         "description": "An enumeration."
       },
@@ -2658,10 +4295,6 @@
         ],
         "type": "object",
         "properties": {
-          "app_version": {
-            "title": "App Version",
-            "type": "string"
-          },
           "uuids": {
             "title": "Uuids",
             "minItems": 1,
@@ -2678,7 +4311,63 @@
             "title": "Export Proxy",
             "type": "boolean"
           }
-        }
+        },
+        "additionalProperties": false,
+        "x-source": "live probe 2026-11-18 (app_version rejected as extra_forbidden; export_proxy required)"
+      },
+      "ExportProfilesDataSerializer": {
+        "properties": {
+          "exported": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Exported"
+          },
+          "failed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Failed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "exported",
+          "failed"
+        ],
+        "title": "ExportProfilesDataSerializer"
+      },
+      "ExportProfilesSerializer": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ProfileExportSerializer"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "total",
+          "page"
+        ],
+        "title": "ExportProfilesSerializer",
+        "description": "Note: uses `total`, not `total_count`."
       },
       "ExtensionOut": {
         "title": "ExtensionOut",
@@ -2745,14 +4434,33 @@
         "properties": {
           "os_arch": {
             "title": "Os Arch",
-            "type": "string"
+            "type": "string",
+            "description": "x86 or arm; valid combinations are listed by GET /fingerprint/platforms."
           },
           "os_version": {
             "title": "Os Version",
-            "type": "string"
+            "type": "string",
+            "description": "Must be one of the versions GET /fingerprint/platforms lists for the os/arch (mac 13/14/15/26, win 10/11, android 12-15); otherwise 400 code validation_error \"OS version does not match allowed versions for the platform\".",
+            "x-source": "live probe 2026-11-18"
           },
           "os": {
             "$ref": "#/components/schemas/OSTypeIn"
+          },
+          "device_model": {
+            "title": "Device Model",
+            "type": "string",
+            "description": "Android only: a `value` from GET /fingerprint/device_models.",
+            "x-source": "live-verified 2026-08-20"
+          },
+          "device_type": {
+            "title": "Device Type",
+            "type": "string",
+            "enum": [
+              "phone",
+              "tablet"
+            ],
+            "description": "Android only. Validated against the chosen device_model; a mismatch or unknown value returns 400 fingerprints.invalid_mobile_type.",
+            "x-source": "live probe 2026-11-18"
           },
           "user_agent": {
             "title": "User Agent",
@@ -2764,7 +4472,9 @@
             "title": "Screen",
             "maxLength": 32,
             "minLength": 3,
-            "type": "string"
+            "type": "string",
+            "description": "Screen from GET /fingerprint/screens, format `<width>x<height> @<scale> <SDR|HDR>[ P3][ ext]`, e.g. `1920x1080 @1 SDR`, `1440x900 @2 HDR P3`. A legacy `1920x1080` value is accepted and normalised to `1920x1080 @1 SDR`.",
+            "x-source": "official spec 2026-11 + live probe 2026-11-18"
           },
           "languages": {
             "$ref": "#/components/schemas/LanguagesIn"
@@ -2808,7 +4518,20 @@
             }
           },
           "media_devices": {
-            "$ref": "#/components/schemas/MediaDevicesType"
+            "title": "Media Devices",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaDevicesType"
+              },
+              {
+                "$ref": "#/components/schemas/MediaDevicesManual"
+              },
+              {
+                "$ref": "#/components/schemas/MediaDevicesReal"
+              }
+            ],
+            "description": "Flat `{video_in, audio_in, audio_out}` or `{type: \"manual\", data: {...}}`; both accepted on create. GET always returns the flat form.",
+            "x-source": "live probe 2026-11-18 (flat and manual forms; real form per official spec)"
           }
         },
         "additionalProperties": false,
@@ -2843,7 +4566,13 @@
         "type": "object",
         "properties": {
           "os": {
-            "$ref": "#/components/schemas/OSTypeIn"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OSTypeIn"
+              }
+            ],
+            "description": "Cannot be changed: sending os returns 400 profiles.update_error \"You can't update os.\"",
+            "x-source": "live probe 2026-11-18"
           },
           "os_arch": {
             "$ref": "#/components/schemas/MacOSArchType"
@@ -2861,7 +4590,9 @@
             "title": "Screen",
             "maxLength": 32,
             "minLength": 3,
-            "type": "string"
+            "type": "string",
+            "description": "Screen from GET /fingerprint/screens, format `<width>x<height> @<scale> <SDR|HDR>[ P3][ ext]`, e.g. `1920x1080 @1 SDR`, `1440x900 @2 HDR P3`. A legacy `1920x1080` value is accepted and normalised to `1920x1080 @1 SDR`.",
+            "x-source": "official spec 2026-11 + live probe 2026-11-18"
           },
           "languages": {
             "$ref": "#/components/schemas/LanguagesIn"
@@ -2906,7 +4637,20 @@
             }
           },
           "media_devices": {
-            "$ref": "#/components/schemas/MediaDevicesType"
+            "title": "Media Devices",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaDevicesType"
+              },
+              {
+                "$ref": "#/components/schemas/MediaDevicesManual"
+              },
+              {
+                "$ref": "#/components/schemas/MediaDevicesReal"
+              }
+            ],
+            "description": "Flat `{video_in, audio_in, audio_out}` or `{type: \"manual\", data: {...}}`; both accepted on create. GET always returns the flat form.",
+            "x-source": "live probe 2026-11-18 (create); same schema on update per official spec"
           }
         },
         "additionalProperties": false,
@@ -2983,18 +4727,46 @@
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
       },
-      "HTTPValidationError": {
-        "title": "HTTPValidationError",
-        "type": "object",
+      "GetProviderProxiesSerializer": {
         "properties": {
-          "detail": {
-            "title": "Detail",
-            "type": "array",
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
             "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            }
+              "$ref": "#/components/schemas/ProviderProxySerializer"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          },
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
           }
-        }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "total_count",
+          "page"
+        ],
+        "title": "GetProviderProxiesSerializer"
       },
       "IPBasedNoManualType": {
         "title": "IPBasedNoManualType",
@@ -3239,6 +5011,24 @@
           }
         }
       },
+      "IspSerializer": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "IspSerializer"
+      },
       "LanguagesIn": {
         "title": "LanguagesIn",
         "required": [
@@ -3394,6 +5184,52 @@
         },
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
+      },
+      "MediaDevicesManual": {
+        "title": "MediaDevicesManual",
+        "required": [
+          "type",
+          "data"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "type": "string",
+            "enum": [
+              "manual"
+            ]
+          },
+          "data": {
+            "$ref": "#/components/schemas/MediaDevicesType"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Wrapped form of media_devices (official spec); the flat form is equivalent.",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18"
+      },
+      "MediaDevicesReal": {
+        "title": "MediaDevicesReal",
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "title": "Type",
+            "type": "string",
+            "enum": [
+              "real"
+            ]
+          },
+          "data": {
+            "title": "Data",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Use the real media devices of the machine.",
+        "x-source": "official spec 2026-11 (not live-verified)"
       },
       "MediaDevicesType": {
         "title": "MediaDevicesType",
@@ -3626,21 +5462,27 @@
         "title": "OSTypeIn",
         "enum": [
           "win",
-          "mac"
+          "mac",
+          "android"
         ],
         "type": "string",
-        "description": "An enumeration."
+        "description": "An enumeration.",
+        "x-source": "live-verified 2026-08-20 (android); lin/ios rejected, live probe 2026-11-18"
       },
       "OSVersion": {
         "title": "OSVersion",
         "enum": [
+          "10",
           "11",
+          "12",
           "13",
           "14",
-          "10"
+          "15",
+          "26"
         ],
         "type": "string",
-        "description": "An enumeration."
+        "description": "Union of the versions listed by GET /fingerprint/platforms: win 10/11, mac 13/14/15/26, android 12-15. The version must match the platform (e.g. mac 11 is rejected).",
+        "x-source": "live probe 2026-11-18"
       },
       "PermanentProxyOut": {
         "title": "PermanentProxyOut",
@@ -3687,12 +5529,14 @@
           "change_ip_url": {
             "title": "Change Ip Url",
             "maxLength": 2048,
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "external_id": {
             "title": "External Id",
             "maxLength": 255,
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "profiles_count": {
             "title": "Profiles Count",
@@ -3703,10 +5547,29 @@
             "title": "Title",
             "maxLength": 255,
             "type": "string"
+          },
+          "conf": {
+            "title": "Conf",
+            "type": "string",
+            "nullable": true,
+            "description": "VPN proxies only: the base64 config, returned in full (contains the private key). null otherwise.",
+            "x-source": "live probe 2026-11-18"
+          },
+          "vpn_protocol": {
+            "title": "Vpn Protocol",
+            "type": "string",
+            "nullable": true,
+            "x-source": "live probe 2026-11-18"
+          },
+          "syn_mode": {
+            "title": "Syn Mode",
+            "type": "string",
+            "nullable": true,
+            "x-source": "live probe 2026-11-18"
           }
         },
         "additionalProperties": false,
-        "description": "stricter base. forbid extra fields"
+        "description": "Saved proxy. conf, vpn_protocol, syn_mode and external_id are present on every item and null on non-VPN proxies."
       },
       "PlatformsBaseSpec": {
         "title": "PlatformsBaseSpec",
@@ -3872,12 +5735,23 @@
             "title": "Proxy",
             "anyOf": [
               {
+                "type": "string",
+                "pattern": "^[0-9a-f]{32}$",
+                "description": "Saved proxy uuid as a plain string"
+              },
+              {
                 "$ref": "#/components/schemas/ProxyDataInExtraIgnore"
               },
               {
                 "$ref": "#/components/schemas/ProxyUUID"
+              },
+              {
+                "$ref": "#/components/schemas/CreateProfileVpnProxyValidator"
               }
-            ]
+            ],
+            "x-source": "VPN form: official spec 2026-11 + live probe 2026-11-18; string/null forms: live probe 2026-08-17",
+            "nullable": true,
+            "description": "A plain uuid string or {\"uuid\": ...} references a saved proxy; null detaches the proxy."
           },
           "storage_options": {
             "$ref": "#/components/schemas/StorageOptions"
@@ -3922,9 +5796,11 @@
           "images_load_limit": {
             "title": "Images Load Limit",
             "type": "integer",
+            "minimum": 0.0,
+            "maximum": 102400000.0,
             "nullable": true,
-            "description": "Maximum size of images to load, in bytes.",
-            "x-source": "live-verified 2026-08-20"
+            "description": "Image size limit in bytes (0-102400000); `null` disables the limit.",
+            "x-source": "live-verified 2026-08-20; bounds per official spec 2026-11 (not live-verified)"
           },
           "local_cache": {
             "title": "Local Cache",
@@ -3945,8 +5821,8 @@
             "title": "Extra Info",
             "type": "object",
             "nullable": true,
-            "description": "Free-form metadata object stored with the profile.",
-            "x-source": "live-verified 2026-08-20"
+            "description": "Free-form metadata; must be a JSON object (a string returns 400 \"should be JSON-object\").",
+            "x-source": "live-verified 2026-08-20; object-only re-verified live probe 2026-11-18"
           }
         },
         "additionalProperties": false,
@@ -3980,6 +5856,29 @@
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
       },
+      "ProfileExportSerializer": {
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "title": "Uuid"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "data": {
+            "type": "string",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uuid",
+          "title",
+          "data"
+        ],
+        "title": "ProfileExportSerializer"
+      },
       "ProfileForceStopRequest": {
         "title": "ProfileForceStopRequest",
         "required": [
@@ -3989,9 +5888,20 @@
         "properties": {
           "version": {
             "title": "Version",
-            "exclusiveMinimum": true,
-            "type": "integer",
-            "minimum": 0.0
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0,
+                "exclusiveMinimum": true
+              },
+              {
+                "type": "string",
+                "pattern": "^[1-9][0-9]*$"
+              }
+            ],
+            "nullable": true,
+            "description": "Profile version from the start response; `null` stops the current session. Required (send `null` explicitly).",
+            "x-source": "official spec 2026-11 + live probe 2026-11-18 (int, numeric string and null accepted; missing or non-numeric -> 400)"
           }
         }
       },
@@ -4018,24 +5928,12 @@
             "default": "not_found"
           },
           "data": {
-            "title": "Data",
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "array",
-                "items": {}
-              },
-              {
-                "type": "object"
-              }
-            ],
-            "default": ""
+            "$ref": "#/components/schemas/DeleteProfilesSerializer"
           }
         },
         "additionalProperties": false,
-        "description": "stricter base. forbid extra fields"
+        "description": "None of the requested profiles was found: data carries the four uuid lists.",
+        "x-source": "live probe 2026-11-18"
       },
       "ProfilePasswordErrorResp": {
         "title": "ProfilePasswordErrorResp",
@@ -4177,12 +6075,23 @@
             "title": "Proxy",
             "anyOf": [
               {
+                "type": "string",
+                "pattern": "^[0-9a-f]{32}$",
+                "description": "Saved proxy uuid as a plain string"
+              },
+              {
                 "$ref": "#/components/schemas/ProxyDataInExtraIgnore"
               },
               {
                 "$ref": "#/components/schemas/ProxyUUID"
+              },
+              {
+                "$ref": "#/components/schemas/UpdateProfileVpnProxyValidator"
               }
-            ]
+            ],
+            "description": "An object updates only the passed fields of the profile's own proxy, or creates one if the profile has none. A plain uuid string or {\"uuid\": ...} references a saved proxy; null detaches the proxy.",
+            "x-source": "VPN form: official spec 2026-11 (not live-verified); string/null forms: live probe 2026-08-17",
+            "nullable": true
           },
           "storage_options": {
             "$ref": "#/components/schemas/StorageOptions"
@@ -4226,9 +6135,11 @@
           "images_load_limit": {
             "title": "Images Load Limit",
             "type": "integer",
+            "minimum": 0.0,
+            "maximum": 102400000.0,
             "nullable": true,
-            "description": "Maximum size of images to load, in bytes.",
-            "x-source": "live-verified 2026-08-20"
+            "description": "Image size limit in bytes (0-102400000); `null` disables the limit.",
+            "x-source": "live-verified 2026-08-20; bounds per official spec 2026-11 (not live-verified)"
           },
           "local_cache": {
             "title": "Local Cache",
@@ -4249,8 +6160,8 @@
             "title": "Extra Info",
             "type": "object",
             "nullable": true,
-            "description": "Free-form metadata object stored with the profile.",
-            "x-source": "live-verified 2026-08-20"
+            "description": "Free-form metadata; must be a JSON object (a string returns 400 \"should be JSON-object\").",
+            "x-source": "live-verified 2026-08-20; object-only re-verified live probe 2026-11-18"
           }
         },
         "additionalProperties": false,
@@ -4297,6 +6208,118 @@
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
       },
+      "ProviderBriefSerializer": {
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "title": "Uuid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uuid",
+          "name"
+        ],
+        "title": "ProviderBriefSerializer"
+      },
+      "ProviderProxySerializer": {
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Uuid",
+            "nullable": true
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProxyType"
+          },
+          "port": {
+            "type": "integer",
+            "title": "Port"
+          },
+          "host": {
+            "type": "string",
+            "title": "Host"
+          },
+          "login": {
+            "type": "string",
+            "title": "Login",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "title": "Password",
+            "nullable": true
+          },
+          "change_ip_url": {
+            "type": "string",
+            "title": "Change Ip Url",
+            "nullable": true
+          },
+          "external_id": {
+            "type": "string",
+            "title": "External Id",
+            "nullable": true
+          },
+          "vpn_protocol": {
+            "type": "string",
+            "title": "Vpn Protocol",
+            "nullable": true
+          },
+          "syn_mode": {
+            "type": "string",
+            "title": "Syn Mode",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "nullable": true
+          },
+          "profiles_count": {
+            "type": "integer",
+            "title": "Profiles Count",
+            "nullable": true
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderBriefSerializer"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProxyKind"
+              }
+            ],
+            "nullable": true
+          },
+          "geo": {
+            "$ref": "#/components/schemas/ProxyGeoSerializer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uuid",
+          "type",
+          "port",
+          "host",
+          "login",
+          "password",
+          "change_ip_url",
+          "external_id",
+          "title",
+          "profiles_count",
+          "provider",
+          "kind",
+          "geo"
+        ],
+        "title": "ProviderProxySerializer",
+        "description": "Proxy bought from a proxy provider. Not listed in GET /proxies. change_ip_url is `https://app.octobrowser.net/change_ip/<uuid>`.",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18"
+      },
       "ProxiesResponse": {
         "title": "ProxiesResponse",
         "required": [
@@ -4317,7 +6340,7 @@
           "code": {
             "title": "Code",
             "type": "string",
-            "default": ""
+            "nullable": true
           },
           "data": {
             "title": "Data",
@@ -4330,6 +6353,93 @@
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
       },
+      "ProxyBriefOut": {
+        "title": "ProxyBriefOut",
+        "required": [
+          "uuid",
+          "type",
+          "port",
+          "host"
+        ],
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "title": "Uuid",
+            "maxLength": 36,
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProxyType"
+          },
+          "port": {
+            "title": "Port",
+            "maximum": 65535.0,
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "host": {
+            "title": "Host",
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "login": {
+            "title": "Login",
+            "maxLength": 255,
+            "type": "string"
+          },
+          "password": {
+            "title": "Password",
+            "maxLength": 255,
+            "type": "string"
+          },
+          "change_ip_url": {
+            "title": "Change Ip Url",
+            "maxLength": 2048,
+            "type": "string",
+            "nullable": true
+          },
+          "external_id": {
+            "title": "External Id",
+            "maxLength": 255,
+            "type": "string",
+            "nullable": true
+          },
+          "profiles_count": {
+            "title": "Profiles Count",
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "maxLength": 255,
+            "type": "string"
+          },
+          "conf": {
+            "title": "Conf",
+            "type": "string",
+            "nullable": true,
+            "description": "VPN proxies only: the base64 config, returned in full (contains the private key). null otherwise.",
+            "x-source": "live probe 2026-11-18"
+          },
+          "vpn_protocol": {
+            "title": "Vpn Protocol",
+            "type": "string",
+            "nullable": true,
+            "x-source": "live probe 2026-11-18"
+          },
+          "syn_mode": {
+            "title": "Syn Mode",
+            "type": "string",
+            "nullable": true,
+            "x-source": "live probe 2026-11-18"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Proxy returned by PATCH /proxies/{uuid}: same fields as PermanentProxyOut; title and profiles_count may be absent (absent for VPN proxies).",
+        "x-source": "live probe 2026-11-18"
+      },
       "ProxyCreateRequest": {
         "title": "ProxyCreateRequest",
         "required": [
@@ -4341,7 +6451,15 @@
         "type": "object",
         "properties": {
           "type": {
-            "$ref": "#/components/schemas/ProxyType"
+            "title": "Type",
+            "type": "string",
+            "enum": [
+              "ssh",
+              "http",
+              "https",
+              "socks",
+              "socks5"
+            ]
           },
           "port": {
             "title": "Port",
@@ -4409,7 +6527,15 @@
         "type": "object",
         "properties": {
           "type": {
-            "$ref": "#/components/schemas/ProxyType"
+            "title": "Type",
+            "type": "string",
+            "enum": [
+              "ssh",
+              "http",
+              "https",
+              "socks",
+              "socks5"
+            ]
           },
           "port": {
             "title": "Port",
@@ -4455,6 +6581,91 @@
         },
         "description": "stricter base. forbid extra fields"
       },
+      "ProxyGeoSerializer": {
+        "properties": {
+          "country_code": {
+            "type": "string",
+            "title": "Country Code",
+            "nullable": true
+          },
+          "region_code": {
+            "type": "string",
+            "title": "Region Code",
+            "nullable": true
+          },
+          "city_code": {
+            "type": "string",
+            "title": "City Code",
+            "nullable": true
+          },
+          "isp_code": {
+            "type": "string",
+            "title": "Isp Code",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "title": "ProxyGeoSerializer",
+        "description": "Always has the four keys (null when unset). Code format depends on the provider (lowercase slugs or uppercase ISO / numeric codes); pass codes back exactly as the lookup endpoints return them.",
+        "x-source": "live probe 2026-11-18"
+      },
+      "ProxyKind": {
+        "type": "string",
+        "enum": [
+          "mobile",
+          "residential",
+          "data_center"
+        ],
+        "title": "ProxyKind"
+      },
+      "ProxyProviderSerializer": {
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "title": "Uuid"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kinds": {
+            "items": {
+              "$ref": "#/components/schemas/ProxyKind"
+            },
+            "type": "array",
+            "title": "Kinds"
+          },
+          "traffic": {
+            "type": "integer",
+            "title": "Traffic",
+            "description": "Remaining team traffic for this provider, in bytes."
+          },
+          "proxy_count": {
+            "type": "integer",
+            "title": "Proxy Count"
+          },
+          "can_create_proxy": {
+            "type": "boolean",
+            "title": "Can Create Proxy"
+          },
+          "can_buy_traffic": {
+            "type": "boolean",
+            "title": "Can Buy Traffic"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uuid",
+          "name",
+          "kinds",
+          "traffic",
+          "proxy_count",
+          "can_create_proxy",
+          "can_buy_traffic"
+        ],
+        "title": "ProxyProviderSerializer",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18"
+      },
       "ProxyResponse": {
         "title": "ProxyResponse",
         "type": "object",
@@ -4472,7 +6683,7 @@
           "code": {
             "title": "Code",
             "type": "string",
-            "default": ""
+            "nullable": true
           },
           "data": {
             "$ref": "#/components/schemas/PermanentProxyOut"
@@ -4488,10 +6699,12 @@
           "http",
           "https",
           "socks",
-          "socks5"
+          "socks5",
+          "vpn"
         ],
         "type": "string",
-        "description": "An enumeration."
+        "description": "An enumeration.",
+        "x-source": "official spec 2026-11 (vpn added in Octo 3.1) + live probe 2026-11-18"
       },
       "ProxyUUID": {
         "title": "ProxyUUID",
@@ -4515,7 +6728,15 @@
         "type": "object",
         "properties": {
           "type": {
-            "$ref": "#/components/schemas/ProxyType"
+            "title": "Type",
+            "type": "string",
+            "enum": [
+              "ssh",
+              "http",
+              "https",
+              "socks",
+              "socks5"
+            ]
           },
           "port": {
             "title": "Port",
@@ -4571,6 +6792,32 @@
           }
         },
         "additionalProperties": false,
+        "description": "Regular (non-VPN) proxy update. Sending connection fields (host, port, login, ...) to a VPN proxy returns 400 proxy.vpn_field_not_applicable."
+      },
+      "ProxyUpdateResponse": {
+        "title": "ProxyUpdateResponse",
+        "type": "object",
+        "properties": {
+          "success": {
+            "title": "Success",
+            "type": "boolean",
+            "default": true
+          },
+          "msg": {
+            "title": "Msg",
+            "type": "string",
+            "default": ""
+          },
+          "code": {
+            "title": "Code",
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProxyBriefOut"
+          }
+        },
+        "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
       },
       "RAMVariant": {
@@ -4583,10 +6830,74 @@
           16,
           24,
           32,
-          64
+          36,
+          48,
+          64,
+          128
         ],
         "type": "integer",
-        "description": "An enumeration."
+        "description": "An enumeration.",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18"
+      },
+      "RateLimitSerializer": {
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "remaining": {
+            "type": "integer",
+            "title": "Remaining",
+            "description": "Already counts this request."
+          },
+          "reset_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Reset At",
+            "description": "UTC. For a moving window: when the oldest counted request expires and frees a slot; for a fixed window: when the window resets."
+          }
+        },
+        "type": "object",
+        "required": [
+          "limit",
+          "remaining",
+          "reset_at"
+        ],
+        "title": "RateLimitSerializer"
+      },
+      "RateLimitsSerializer": {
+        "properties": {
+          "rpm": {
+            "$ref": "#/components/schemas/RateLimitSerializer"
+          },
+          "rph": {
+            "$ref": "#/components/schemas/RateLimitSerializer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rpm",
+          "rph"
+        ],
+        "title": "RateLimitsSerializer"
+      },
+      "RegionSerializer": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "RegionSerializer"
       },
       "RenderersRespBaseSpec": {
         "title": "RenderersRespBaseSpec",
@@ -4624,6 +6935,108 @@
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
       },
+      "ResourceUsageSerializer": {
+        "properties": {
+          "used": {
+            "type": "integer",
+            "title": "Used"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "used",
+          "limit"
+        ],
+        "title": "ResourceUsageSerializer"
+      },
+      "RestoreProfilesErrorResp": {
+        "title": "RestoreProfilesErrorResp",
+        "type": "object",
+        "properties": {
+          "success": {
+            "title": "Success",
+            "type": "boolean",
+            "default": false
+          },
+          "msg": {
+            "title": "Msg",
+            "type": "string",
+            "default": "No profiles to restore"
+          },
+          "code": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ErrorCode"
+              }
+            ],
+            "default": "profiles.restore_error"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RestoreProfilesSerializer"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Nothing was restored; unlike most errors, data carries the three uuid lists.",
+        "x-source": "live probe 2026-11-18"
+      },
+      "RestoreProfilesSerializer": {
+        "properties": {
+          "restored_uuids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Restored Uuids"
+          },
+          "payment_required_uuids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Payment Required Uuids"
+          },
+          "not_found_uuids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Not Found Uuids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "restored_uuids",
+          "payment_required_uuids",
+          "not_found_uuids"
+        ],
+        "title": "RestoreProfilesSerializer",
+        "description": "payment_required_uuids: restoring would cost tokens; paid restore is not available via the API (use the client)."
+      },
+      "RestoreProfilesValidator": {
+        "properties": {
+          "uuids": {
+            "items": {
+              "type": "string",
+              "maxLength": 36,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Uuids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "uuids"
+        ],
+        "title": "RestoreProfilesValidator"
+      },
       "ScreensRespBaseSpec": {
         "title": "ScreensRespBaseSpec",
         "type": "object",
@@ -4644,7 +7057,9 @@
             "items": {
               "$ref": "#/components/schemas/FingerprintDataOutBaseSpec"
             },
-            "default": []
+            "default": [],
+            "description": "Items' `value` uses the format `<width>x<height> @<scale> <SDR|HDR>[ P3][ ext]`, e.g. `1280x720 @1 SDR ext`.",
+            "x-source": "live probe 2026-11-18"
           }
         },
         "additionalProperties": false,
@@ -4893,7 +7308,8 @@
         "title": "SubaccountRequest",
         "type": "object",
         "required": [
-          "email"
+          "email",
+          "permissions"
         ],
         "properties": {
           "email": {
@@ -4904,7 +7320,8 @@
           "permissions": {
             "$ref": "#/components/schemas/SubaccountPermissions"
           }
-        }
+        },
+        "x-source": "live probe 2026-11-18 (POST without permissions -> 400 missing)"
       },
       "SubaccountsListResponse": {
         "title": "SubaccountsListResponse",
@@ -4944,6 +7361,99 @@
             "type": "integer"
           }
         }
+      },
+      "SubscriptionInfoSerializer": {
+        "properties": {
+          "plan": {
+            "type": "string",
+            "title": "Plan"
+          },
+          "expiration": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expiration",
+            "description": "UTC, ISO 8601 without timezone suffix."
+          },
+          "auto_renew": {
+            "type": "boolean",
+            "title": "Auto Renew"
+          },
+          "balance": {
+            "type": "string",
+            "title": "Balance",
+            "description": "Team balance, decimal string (e.g. \"125.5\")."
+          },
+          "profiles": {
+            "$ref": "#/components/schemas/ResourceUsageSerializer"
+          },
+          "team_members": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ResourceUsageSerializer"
+              }
+            ],
+            "description": "Excludes the team owner (per Postman)."
+          },
+          "api_tokens": {
+            "$ref": "#/components/schemas/ResourceUsageSerializer"
+          },
+          "rate_limits": {
+            "$ref": "#/components/schemas/RateLimitsSerializer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan",
+          "expiration",
+          "auto_renew",
+          "balance",
+          "profiles",
+          "team_members",
+          "api_tokens",
+          "rate_limits"
+        ],
+        "title": "SubscriptionInfoSerializer",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18"
+      },
+      "SupportedArchSerializer": {
+        "properties": {
+          "arch": {
+            "$ref": "#/components/schemas/MacOSArchType"
+          },
+          "os_versions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Os Versions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "arch",
+          "os_versions"
+        ],
+        "title": "SupportedArchSerializer"
+      },
+      "SupportedPlatformSerializer": {
+        "properties": {
+          "os": {
+            "$ref": "#/components/schemas/OSTypeIn"
+          },
+          "archs": {
+            "items": {
+              "$ref": "#/components/schemas/SupportedArchSerializer"
+            },
+            "type": "array",
+            "title": "Archs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "os",
+          "archs"
+        ],
+        "title": "SupportedPlatformSerializer"
       },
       "TagCreate": {
         "title": "TagCreate",
@@ -5021,9 +7531,6 @@
       },
       "TagUpdate": {
         "title": "TagUpdate",
-        "required": [
-          "name"
-        ],
         "type": "object",
         "properties": {
           "name": {
@@ -5039,7 +7546,8 @@
           }
         },
         "additionalProperties": false,
-        "description": "stricter base. forbid extra fields"
+        "description": "stricter base. forbid extra fields",
+        "x-source": "official spec 2026-11 (name optional)"
       },
       "TagsResponse": {
         "title": "TagsResponse",
@@ -5164,6 +7672,115 @@
         "additionalProperties": false,
         "description": "stricter base. forbid extra fields"
       },
+      "TrashBinProfileSerializer": {
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "title": "Uuid"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "deleted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Deleted At",
+            "description": "UTC, ISO 8601 without timezone suffix."
+          },
+          "deleted_by": {
+            "type": "string",
+            "title": "Deleted By",
+            "nullable": true,
+            "description": "Member email, or `<token name> (API)` when deleted with an API token (e.g. `API token (API)` for the legacy token)."
+          },
+          "by_automation_api": {
+            "type": "boolean",
+            "title": "By Automation Api"
+          },
+          "restore": {
+            "$ref": "#/components/schemas/TrashBinRestoreInfoSerializer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uuid",
+          "title",
+          "deleted_at",
+          "deleted_by",
+          "by_automation_api",
+          "restore"
+        ],
+        "title": "TrashBinProfileSerializer"
+      },
+      "TrashBinRestoreInfoSerializer": {
+        "properties": {
+          "paid": {
+            "type": "boolean",
+            "title": "Paid"
+          },
+          "price": {
+            "type": "string",
+            "title": "Price"
+          },
+          "free_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Free At",
+            "nullable": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "paid",
+          "price",
+          "free_at"
+        ],
+        "title": "TrashBinRestoreInfoSerializer",
+        "description": "Restores are free a limited number of times per period; after that paid is true, price is the token cost (decimal string) and free_at (UTC) is when restoring becomes free again."
+      },
+      "TrashBinSerializer": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": false
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "default": ""
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/TrashBinProfileSerializer"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "nullable": true
+          },
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "total_count",
+          "page"
+        ],
+        "title": "TrashBinSerializer",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18"
+      },
       "UpdateFolderValidator": {
         "properties": {
           "name": {
@@ -5190,6 +7807,136 @@
         "additionalProperties": false,
         "type": "object",
         "title": "UpdateFolderValidator"
+      },
+      "UpdateProfileVpnProxyValidator": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "enum": [
+              "vpn"
+            ]
+          },
+          "vpn_protocol": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VPNProtocol"
+              }
+            ],
+            "default": "wireguard"
+          },
+          "conf": {
+            "type": "string",
+            "maxLength": 21848,
+            "minLength": 1,
+            "title": "Conf"
+          },
+          "syn_mode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VPNSynMode"
+              }
+            ],
+            "default": "profile_based"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "conf"
+        ],
+        "title": "UpdateProfileVpnProxyValidator",
+        "description": "VPN (WireGuard/AmneziaWG) proxy bound to this profile only. `conf` is the base64-encoded config text with an `Endpoint = host:port` line. The profile's proxy is then returned with `uuid: \"\"`, `type: \"vpn\"` and without `conf`; it is not listed in GET /proxies.",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18"
+      },
+      "UpdateProviderProxyValidator": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Title"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "UpdateProviderProxyValidator"
+      },
+      "UpdateVpnProxyValidator": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "vpn"
+            ],
+            "title": "Type",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Title",
+            "nullable": true
+          },
+          "external_id": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "External Id",
+            "nullable": true
+          },
+          "vpn_protocol": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VPNProtocol"
+              }
+            ],
+            "nullable": true
+          },
+          "conf": {
+            "type": "string",
+            "maxLength": 21848,
+            "minLength": 1,
+            "title": "Conf",
+            "nullable": true
+          },
+          "syn_mode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VPNSynMode"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateVpnProxyValidator",
+        "description": "VPN proxy update; only passed fields change. A new conf re-reads host/port from its Endpoint line. `type: \"vpn\"` + `conf` converts a regular proxy to VPN (per Postman).",
+        "x-source": "official spec 2026-11 + live probe 2026-11-18 (syn_mode change)"
+      },
+      "VPNProtocol": {
+        "type": "string",
+        "enum": [
+          "wireguard"
+        ],
+        "title": "VPNProtocol",
+        "description": "Only wireguard; also used for AmneziaWG configs."
+      },
+      "VPNSynMode": {
+        "type": "string",
+        "enum": [
+          "profile_based",
+          "win",
+          "mac",
+          "android",
+          "real"
+        ],
+        "title": "VPNSynMode",
+        "description": "TCP/IP (SYN) fingerprint emulation: profile_based (default) follows the attached profile's OS; win/mac/android always emulate that OS; real uses the host machine's real stack."
       },
       "ValidationError": {
         "title": "ValidationError",
@@ -5223,6 +7970,43 @@
             "type": "string"
           }
         }
+      },
+      "ValidationErrorResponse": {
+        "title": "ValidationErrorResponse",
+        "type": "object",
+        "required": [
+          "validation_error"
+        ],
+        "properties": {
+          "validation_error": {
+            "title": "Validation Error",
+            "type": "object",
+            "properties": {
+              "body_params": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              },
+              "query_params": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              },
+              "path_params": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "description": "Cloud API validation failure, returned with HTTP 400 and NOT wrapped in the success/msg/data/code envelope. Only the keys for the failing input location (body_params, query_params, path_params) are present; items also carry `input` (and sometimes `ctx`).",
+        "x-source": "live probe 2026-11-18 (path_params seen on an invalid proxy kind)"
       },
       "WebRTCIn": {
         "title": "WebRTCIn",

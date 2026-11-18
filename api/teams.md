@@ -1,8 +1,10 @@
 # Teams API
 
-Manage team-wide resources: shared browser extensions, team members (subaccounts), and pending invitations.
+Manage team-wide resources: shared browser extensions, team members (subaccounts), pending invitations, and read the team's subscription, plan usage and current API rate limits.
 
 All endpoints return the standard envelope `{ "success": bool, "msg": string, "data": ..., "code": string | null }`. The subaccounts and invites listings additionally return `total_count`; the extensions listing does not.
+
+Profile tasks cannot be managed through the API (per the official API FAQ).
 
 > Team features require a team or enterprise subscription.
 
@@ -13,8 +15,8 @@ Returns extensions used by the team, installed in any profile.
 **Endpoint**: `GET /teams/extensions`
 
 **Query Parameters**:
-- `start` (int, optional) — offset (zero-based).
-- `limit` (int, optional) — page size, maximum `100`.
+- `start` (int, optional) — offset (zero-based), default `0`.
+- `limit` (int, optional) — page size, `1`–`100`, default `25`.
 
 ```bash
 curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/extensions?start=0&limit=25" \
@@ -33,7 +35,8 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/extensions?star
       "name": "Google Translate",
       "version": "2.0.12"
     }
-  ]
+  ],
+  "code": null
 }
 ```
 
@@ -45,8 +48,18 @@ Remove team-installed extensions by UUID.
 
 **Endpoint**: `DELETE /teams/extensions`
 
+**Required permission:** Delete extensions.
+
 **Request Body**:
-- `uuids` (string[], required) — up to 100 extension UUIDs per request, in the `<extension-id>@<version>` form returned by `GET /teams/extensions`.
+- `uuids` (string[], required) — 1 to 100 extension UUIDs per request, in the `<extension-id>@<version>` form returned by `GET /teams/extensions`.
+
+The request has a JSON body — make sure your HTTP client sends a body with `DELETE` requests.
+
+A `200` does not mean anything was deleted: well-formed but unknown extension ids are silently ignored (live-verified: `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@1.0.0` → `200 "Extensions deleted successfully"`). Malformed ids — the extension id part must be 32 characters `a`–`p`, as in Chrome — are rejected with `400`:
+
+```json
+{"validation_error":{"body_params":[{"type":"value_error","loc":["uuids"],"msg":"Value error, Incorrect extension ids","input":["0000000000000000000000000000dead@1.0.0"]}]}}
+```
 
 > If a profile is running while the extension is deleted, the running session keeps using the extension. Once that profile stops, the extension reappears in the team's extension list. Make sure no profile is using the extensions you are about to remove.
 
@@ -60,14 +73,15 @@ curl -X DELETE "https://app.octobrowser.net/api/v2/automation/teams/extensions" 
 ### Example Response
 
 ```json
-{ "success": true, "msg": "Extensions deleted successfully", "data": "" }
-```
+{ "success": true, "msg": "Extensions deleted successfully", "data": "", "code": null }```
 
 ## Get Subaccounts
 
 List the team's members.
 
 **Endpoint**: `GET /teams/subaccounts`
+
+**Required permission:** Manage team.
 
 ```bash
 curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" \
@@ -105,7 +119,8 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" \
         "view_profiles_wo_folders": false
       }
     }
-  ]
+  ],
+  "code": null
 }
 ```
 
@@ -117,9 +132,11 @@ Invite a new member to the team. The address receives an email invitation; the s
 
 **Endpoint**: `POST /teams/subaccounts`
 
+**Required permission:** Manage team.
+
 **Request Body**:
 - `email` (string, required) — invitee's email.
-- `permissions` (object, optional) — see [Permission Reference](#permission-reference). Any permission you do not list defaults to `false`.
+- `permissions` (object, required) — see [Permission Reference](#permission-reference). The object itself must be present (omitting it → `400` `validation_error` `missing` at `["permissions"]`, live-verified), but any permission you do not list inside it defaults to `false`.
 
 ```bash
 curl -X POST "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" \
@@ -150,14 +167,15 @@ curl -X POST "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" \
 ### Example Response
 
 ```json
-{ "success": true, "msg": "Invite sent", "data": "" }
-```
+{ "success": true, "msg": "Invite sent", "data": "", "code": null }```
 
 ## Update Subaccount
 
 Change a subaccount's permissions. The subaccount is identified by `email`.
 
 **Endpoint**: `PATCH /teams/subaccounts`
+
+**Required permission:** Manage team.
 
 **Request Body**: same shape as [Create Subaccount](#create-subaccount). Permissions you omit default to `false`, so always send the full permissions block when patching.
 
@@ -193,7 +211,8 @@ curl -X PATCH "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" 
 {
   "success": true,
   "msg": "Team member updated",
-  "data": { "uuid": "d2874db6b3344506946c1bb91bd17bf8" }
+  "data": { "uuid": "d2874db6b3344506946c1bb91bd17bf8" },
+  "code": null
 }
 ```
 
@@ -203,8 +222,12 @@ Remove a team member by email.
 
 **Endpoint**: `DELETE /teams/subaccounts`
 
+**Required permission:** Manage team.
+
 **Request Body**:
 - `email` (string, required)
+
+The request has a JSON body — make sure your HTTP client sends a body with `DELETE` requests.
 
 ```bash
 curl -X DELETE "https://app.octobrowser.net/api/v2/automation/teams/subaccounts" \
@@ -216,14 +239,15 @@ curl -X DELETE "https://app.octobrowser.net/api/v2/automation/teams/subaccounts"
 ### Example Response
 
 ```json
-{ "success": true, "msg": "Team member deleted", "data": "" }
-```
+{ "success": true, "msg": "Team member deleted", "data": "", "code": null }```
 
 ## Get Invites
 
 List pending invitations created via `POST /teams/subaccounts` that have not yet been accepted.
 
 **Endpoint**: `GET /teams/invites`
+
+**Required permission:** Manage team.
 
 ```bash
 curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/invites" \
@@ -239,7 +263,8 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/invites" \
   "total_count": 1,
   "data": [
     { "receiver": "test_receiver@octo.net", "created_at": "2023-11-27T13:07:28" }
-  ]
+  ],
+  "code": null
 }
 ```
 
@@ -249,8 +274,12 @@ Cancel a pending invitation by recipient email.
 
 **Endpoint**: `DELETE /teams/invites`
 
+**Required permission:** Manage team.
+
 **Request Body**:
 - `receiver` (string, required) — email address the invite was sent to.
+
+The request has a JSON body — make sure your HTTP client sends a body with `DELETE` requests.
 
 ```bash
 curl -X DELETE "https://app.octobrowser.net/api/v2/automation/teams/invites" \
@@ -262,8 +291,54 @@ curl -X DELETE "https://app.octobrowser.net/api/v2/automation/teams/invites" \
 ### Example Response
 
 ```json
-{ "success": true, "msg": "Invite deleted", "data": "" }
+{ "success": true, "msg": "Invite deleted", "data": "", "code": null }```
+
+## Get Subscription
+
+Returns the team's subscription, balance, usage of the plan limits, and the current API rate-limit budget.
+
+**Endpoint**: `GET /teams/subscription`
+
+No parameters. No specific token permission is required.
+
+```bash
+curl -X GET "https://app.octobrowser.net/api/v2/automation/teams/subscription" \
+  -H "X-Octo-Api-Token: YOUR_API_TOKEN"
 ```
+
+### Example Response
+
+```json
+{
+  "success": true,
+  "msg": "",
+  "data": {
+    "plan": "team",
+    "expiration": "2026-11-27T00:00:00",
+    "auto_renew": true,
+    "balance": "125.5",
+    "profiles": { "used": 120, "limit": 500 },
+    "team_members": { "used": 2, "limit": 5 },
+    "api_tokens": { "used": 2, "limit": 3 },
+    "rate_limits": {
+      "rpm": { "limit": 100, "remaining": 98, "reset_at": "2026-10-27T12:01:00" },
+      "rph": { "limit": 1500, "remaining": 1460, "reset_at": "2026-10-27T12:35:00" }
+    }
+  },
+  "code": null
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `plan` | Plan name (e.g. `base`, `team`, `advanced`). |
+| `expiration` | Subscription end date, UTC, ISO 8601 without timezone suffix. |
+| `auto_renew` | Whether the subscription renews automatically. |
+| `balance` | Team balance as a decimal string (e.g. `"125.5"`). |
+| `profiles`, `team_members`, `api_tokens` | `{ "used", "limit" }` for each plan limit. `team_members` does not count the account owner. |
+| `rate_limits.rpm`, `rate_limits.rph` | Requests per minute / per hour: `limit`, `remaining` (already counting this request) and `reset_at` (UTC) — for a moving window, when the oldest counted request expires and frees a slot; for a fixed window, when the window resets. |
+
+The same budget is also reported in the `X-Ratelimit-*` response headers; see [rate-limiting.md](rate-limiting.md). Note that this call itself consumes one request.
 
 ## Permission Reference
 
@@ -294,7 +369,7 @@ Nested permission groups:
 
 ## Common Errors
 
-- **400 Bad Request** — invalid email, malformed permissions, or missing required field.
-- **403 Forbidden** — the calling token does not have `manage_team` permission.
-- **404 Not Found** — subaccount, invite, or extension UUID does not exist.
+- **400 Bad Request** — invalid email, malformed permissions, missing required field (including `permissions` on create), or malformed extension ids (`"Incorrect extension ids"`).
+- **403 Forbidden** — `no_permission`: the API token lacks the required permission (Manage team / Delete extensions).
+- **404 Not Found** — subaccount or invite does not exist.
 - **409 Conflict** — subaccount already exists with that email, or an invite has already been issued.

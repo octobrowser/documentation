@@ -27,6 +27,7 @@ class Text(HTMLParser):
 def html2text(s):
     if not s: return ""
     p=Text(); p.feed(s); t=html.unescape("".join(p.out))
+    t="\n".join(l.rstrip() for l in t.split("\n"))
     return re.sub(r"\n{3,}","\n\n",t).strip()
 
 def pretty(body):
@@ -119,7 +120,8 @@ def main():
     if c.get("variable"):
         md.append("\n## Variables\n"); md += [f"- `{v.get('key')}` = `{v.get('value','')}`" for v in c["variable"]]; md.append("")
     inv=[]; walk(c.get("item",[]),1,md,inv,[])
-    open(out,"w").write("\n".join(md).rstrip()+"\n")
+    text="\n".join(l.rstrip() for l in "\n".join(md).split("\n"))
+    open(out,"w").write(re.sub(r"\n{3,}","\n\n",text).rstrip()+"\n")
     if invp: json.dump(inv, open(invp,"w"), indent=1, sort_keys=True)
     print(f"{len(inv)} requests -> {out}" + (f", inventory -> {invp}" if invp else ""))
 

@@ -2,13 +2,14 @@
 
 The action log is a real-time audit stream of team events (profile starts, stops, proxy changes, transfers, deletions) delivered over a WebSocket. Unlike the rest of the cloud API, it is not a REST endpoint: you open one long-lived connection and receive JSON pages as events happen.
 
-> **Live check on 2026-08-20:** an HTTP upgrade request to this path returned 404 `not_found`; the endpoint is documented in the official Postman collection and may require the API option to be enabled on the subscription — treat the details below as upstream-documented, not mirror-verified.
+> **Live check on 2026-11-18:** an HTTP upgrade request with a valid token returned `101 Switching Protocols` — the endpoint accepts connections. The message format below is as documented upstream.
 
 ## Endpoint
 
 - **Type**: WebSocket
 - **URL**: `wss://app.octobrowser.net/api/v2/automation/ws/action_log`
 - **Authentication**: API token in the `X-Octo-Api-Token` header, sent with the upgrade request (same token as the REST API, see [authentication.md](authentication.md)).
+- **Required permission:** Action log. Without it, the connection is rejected with `403` (`no_permission`).
 
 Example handshake with [`websocat`](https://github.com/vi/websocat):
 
@@ -77,7 +78,7 @@ Each WebSocket message is a **StreamPage**: an `items` array of up to 100 events
 - `uuid` (string) — unique id of the log entry; feed it back as `after_uuid` to resume.
 - `action` (string) — event type, see [Event Types](#event-types).
 - `time` (integer) — Unix timestamp of the event.
-- `user_email` (string) — team member who triggered the event.
+- `user_email` (string) — team member who triggered the event. For actions made with an API token it is `<token name> (API)`, e.g. `Scraper (API)`; actions made with the token from earlier versions show `API token (API)`. Before Octo 3.2 the account owner's email was shown instead.
 - `object_type` (string) — type of the affected object, e.g. `profile`.
 - `object_id` (string) — UUID of the affected object.
 - `object_title` (string) — human-readable title of the affected object.
@@ -110,6 +111,7 @@ The `watermark` object acts as a cursor:
 - `profiles.force_stopped` — profile browser was force stopped
 - `profiles.transferred` — profile was transferred
 - `profiles.trashed` — profile was moved to the trash bin
+- `profiles.created` — profile was created
 - `profiles.updated` — profile was updated
 - `profiles.deleted` — profile was deleted
 - `profiles.proxy_assigned` — proxy was assigned to a profile
@@ -127,12 +129,11 @@ The `watermark` object acts as a cursor:
 - **Event retention**: 24 hours; entries older than 24 h are no longer available.
 - **Batch size**: up to 100 records per page.
 - **Subscription**: the team must have the API option in its subscription.
-- **Permissions**: subaccounts presumably need the `manage_action_log` permission (see [teams.md](teams.md)); this was not verified.
+- **Permissions**: see **Required permission** above.
 
 ## Common Errors
 
 - **401 Unauthorized** — missing or invalid `X-Octo-Api-Token` header.
-- **403 Forbidden** — likely when the API option is not enabled on the subscription or the subaccount lacks `manage_action_log` (not verified).
-- **404 Not Found** (`not_found`) — returned to a plain HTTP/upgrade request when the stream is unavailable for the account (observed on 2026-08-20; likely the API option is missing from the subscription).
+- **403 Forbidden** (`no_permission`) — the API token lacks the Action log permission; also expected when the API option is not enabled on the subscription.
 
 See [errors.md](errors.md) for the standard error envelope.

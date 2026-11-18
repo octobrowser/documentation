@@ -14,7 +14,7 @@ If you are an LLM, agent, or crawler, start here — these are the cheapest path
 | Purpose | URL |
 |---|---|
 | Site index (llmstxt.org spec) | [`/llms.txt`](llms.txt) · also at [`/.well-known/llms.txt`](.well-known/llms.txt) |
-| Full docs in one file (~90 KB) | [`/llms-full.txt`](llms-full.txt) |
+| Full docs in one file (~190 KB) | [`/llms-full.txt`](llms-full.txt) |
 | OpenAPI 3.0 spec | [`/openapi.json`](openapi.json) |
 | Crawler policy | [`/robots.txt`](robots.txt) · [`/ai.txt`](ai.txt) |
 | Sitemap | [`/sitemap.xml`](sitemap.xml) |
@@ -22,21 +22,22 @@ If you are an LLM, agent, or crawler, start here — these are the cheapest path
 ### Markdown documents
 
 **Getting started**
-- [`api/authentication.md`](api/authentication.md) — API tokens, header format, mirror hosts
+- [`api/authentication.md`](api/authentication.md) — named API tokens, per-token permissions, header format, mirror hosts
 - [`api/rate-limiting.md`](api/rate-limiting.md) — RPM/RPH budgets, `Retry-After`, 429 handling
 - [`api/errors.md`](api/errors.md) — response envelope, validation errors, error code reference
 
 **Core resources**
-- [`api/profiles.md`](api/profiles.md) — browser profiles (15 endpoints)
+- [`api/profiles.md`](api/profiles.md) — browser profiles, trash bin (17 endpoints)
 - [`api/tags.md`](api/tags.md) — profile tags (4 endpoints)
 - [`api/folders.md`](api/folders.md) — profile folders, Octo 3.0+ (4 endpoints)
-- [`api/proxies.md`](api/proxies.md) — saved proxies (4 endpoints)
-- [`api/teams.md`](api/teams.md) — subaccounts, invitations, extensions (8 endpoints)
-- [`api/action-log.md`](api/action-log.md) — team audit stream over WebSocket (1 endpoint, upstream-documented)
-- [`api/fingerprint.md`](api/fingerprint.md) — fingerprint object, renderer/screen/mobile lookups (3 endpoints)
+- [`api/proxies.md`](api/proxies.md) — saved proxies incl. WireGuard/AmneziaWG VPN (4 endpoints)
+- [`api/proxy-providers.md`](api/proxy-providers.md) — Proxy Shop: providers, location lookups, provider proxies (11 endpoints)
+- [`api/teams.md`](api/teams.md) — subaccounts, invitations, extensions, subscription (9 endpoints)
+- [`api/action-log.md`](api/action-log.md) — team audit stream over WebSocket (1 endpoint)
+- [`api/fingerprint.md`](api/fingerprint.md) — fingerprint object, platform/renderer/screen/mobile lookups (4 endpoints)
 
 **Optional**
-- [`api/local-client.md`](api/local-client.md) — desktop client on `localhost:58888` (12 endpoints)
+- [`api/local-client.md`](api/local-client.md) — desktop client on `localhost:58888` (13 endpoints)
 - [`api/docker.md`](api/docker.md) — headless Docker / Kubernetes
 - [`api/automation.md`](api/automation.md) — Selenium, Playwright, Puppeteer, Pyppeteer
 
@@ -45,13 +46,13 @@ If you are an LLM, agent, or crawler, start here — these are the cheapest path
 ## API at a glance
 
 - **Base URL:** `https://app.octobrowser.net/api/v2/automation`
-- **Authentication:** header `X-Octo-Api-Token: <token>` on every cloud request
-- **Local client:** unauthenticated, `http://localhost:58888`
-- **Response envelope:** `{ "success": bool, "msg": string, "data": ..., "code": string | null }`; paginated listings (profiles, renderers) add `total_count` and `page`
+- **Authentication:** header `X-Octo-Api-Token: <token>` on every cloud request; each named token has its own permissions (`403 no_permission` otherwise)
+- **Local client:** unauthenticated, `http://localhost:58888` (port configurable via `OCTO_LOCAL_PORT`)
+- **Response envelope:** `{ "success": bool, "msg": string, "data": ..., "code": string | null }`; paginated listings (profiles, trash bin, renderers, provider proxies) add `total_count` and `page`
 - **Pagination:** zero-based `page`; `page_len` ∈ `{10, 25, 50, 100}`
-- **Validation errors:** HTTP 400 with `{"validation_error": {"body_params" | "query_params": [...]}}`
+- **Validation errors:** HTTP 400 with `{"validation_error": {"body_params" | "query_params" | "path_params": [...]}}`
 - **Rate limits:** 50–1000 RPM and 500–50000 RPH depending on subscription (local-client profile operations count too)
-- **IDs:** 32-char hex UUIDs; tags and folders are referenced by name in profile payloads; timestamps are ISO 8601
+- **IDs:** 32-char hex UUIDs; tags and folders are referenced by name in profile payloads; timestamps are ISO 8601 UTC without a timezone suffix; prices and balances are decimal strings
 - **Mirrors:** `app.octobrowser-mirror1.com` / `.net` / `.org`
 
 ---

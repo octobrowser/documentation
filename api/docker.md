@@ -1,112 +1,12 @@
 # Docker & Kubernetes
 
-Octo Browser does not ship a public registry image — you build a container yourself by downloading the Linux release inside a Dockerfile. The recipes below come straight from the official Postman documentation and run the desktop app inside a virtual X server (`Xvfb`) so its local API on port `58888` is reachable from the host.
+Octo Browser does not ship a public registry image — you build a container yourself by downloading the Linux release inside a Dockerfile and running the desktop app under a virtual X server (`Xvfb`) in headless mode, so its local API on port `58888` can drive profiles. The recipe below follows the official Postman documentation: a base image plus a pre-authenticated "golden" snapshot of the browser components, signed in with an API token.
 
-## Dockerfile
-
-Builds an Ubuntu 22.04 image, installs Chrome, Octo dependencies, the Octo Browser AppImage, and starts everything under `Xvfb` in headless mode.
-
-```dockerfile
-FROM ubuntu:22.04
-ARG TZ=America/Los_Angeles
-ARG DEBIAN_FRONTEND=noninteractive
-ENV LANG="C.UTF-8"
-
-RUN apt-get update && apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg \
-    unzip \
-    libgles2 libegl1 xvfb \
-    --no-install-recommends \
- && curl -sSL https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
- && echo "deb https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
- && apt-get update && apt-get install -y \
-    fontconfig \
-    fonts-ipafont-gothic \
-    fonts-kacst \
-    fonts-noto \
-    fonts-symbola \
-    fonts-thai-tlwg \
-    fonts-wqy-zenhei \
-    connect-proxy \
-    dnsutils \
-    fonts-freefont-ttf \
-    iproute2 \
-    iptables \
-    iputils-ping \
-    net-tools \
-    openvpn \
-    procps \
-    socat \
-    ssh \
-    sshpass \
-    sudo \
-    tcpdump \
-    telnet \
-    traceroute \
-    tzdata \
-    vim-nox
-
-RUN curl https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb --output /tmp/chrome.deb
-RUN apt install -y /tmp/chrome.deb
-
-# Octo dependencies
-RUN apt update && apt install -y libgl1 libglib2.0-0 xvfb zip
-
-RUN mkdir -p /home/octo/browser
-
-# Create the unprivileged "octo" user
-RUN groupadd -r octo \
- && useradd -r -g octo -s /bin/bash -m -G audio,video,sudo -p $(echo 1 | openssl passwd -1 -stdin) octo \
- && mkdir -p /home/octo/ \
- && chown -R octo:octo /home/octo
-
-RUN mkdir -p /etc/sudoers.d \
- && echo 'octo ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/octo \
- && chmod 0440 /etc/sudoers.d/octo
-RUN usermod -a -G sudo octo
-USER octo
-
-# Install Octo Browser
-RUN curl -o /home/octo/browser/octo-browser.tar.gz https://binaries.octobrowser.net/releases/installer/OctoBrowser.linux.tar.gz
-RUN tar -xzf /home/octo/browser/octo-browser.tar.gz -C /home/octo/browser
-
-# Start Xvfb and Octo Browser in headless mode
-CMD Xvfb :1 -ac -screen 0 "1920x1080x24" -nolisten tcp +extension GLX +render -noreset & \
-    sudo chown -R octo:octo /home/octo && \
-    sleep 5 && DISPLAY=:1 OCTO_HEADLESS=1 /home/octo/browser/OctoBrowser.AppImage
-```
-
-## run.sh
-
-Build the image, run the container with the local API mapped to host port `58895`, then sign in and start a profile via the local API.
-
-```bash
-export EMAIL=your_email
-export PASSWORD=your_password
-export PROFILE_UUID=PUT_UUID_HERE
-
-docker build -t octobrowser:latest .
-docker run --name octo -it --rm \
-       --security-opt seccomp:unconfined \
-       -v '/srv/docker_octo/cache:/home/octo/.Octo Browser/' \
-       -p 58895:58888 \
-       octobrowser:latest
-
-# Drive the container's local API (xh: https://github.com/ducaale/xh/releases)
-xh POST localhost:58895/api/auth/login email=${EMAIL} password=${PASSWORD}
-xh POST localhost:58895/api/profiles/start uuid=${PROFILE_UUID} headless:=true debug_port:=true
-```
-
-The volume mount under `/home/octo/.Octo Browser/` persists profile cache between runs.
-
-After `start`, the response contains `ws_endpoint` and `debug_port`. Connect your automation library (Puppeteer, Playwright, Selenium) to those exactly as in [automation.md](automation.md).
+> Earlier upstream docs also had a minimal `Dockerfile` + `run.sh` recipe that signed in via `/api/auth/login` with email/password on every start. Upstream has removed it; the base `dockerfile` in [Step 2](#step-2-dockerfile--base-image) below supersedes it.
 
 ## Golden Image (Pre-Authenticated Snapshot)
 
-The basic recipe above authenticates with email/password on every container start and re-downloads ~1.8–2.2 GB of browser components (`Octium`, `Tentacle`, `Profile_Parser`, `Tentacle_Ssh`, `userdata`) unless the cache is persisted. Octo offers two ways to avoid that:
+A plain container that starts from scratch has to sign in on every start and re-downloads ~1.8–2.2 GB of browser components (`Octium`, `Tentacle`, `Profile_Parser`, `Tentacle_Ssh`, `userdata`) unless the cache is persisted. Octo offers two ways to avoid that:
 
 - **Method 1 — components folder on the host.** Suitable when you have a static host that builds and runs the containers. Mount the components directory into every container:
 
@@ -144,7 +44,7 @@ Replace `your_token_here` with your API token.
 
 ### Step 2: `dockerfile` — base image
 
-Same as the basic Dockerfile, but sets `HOME`, `APPIMAGE_EXTRACT_AND_RUN=1` and `OCTO_DATA` in `ENV`, adds `jq x11vnc libgl1 libglib2.0-0 zip`, and ends with `CMD ["/bin/bash"]` instead of launching the browser — the entrypoint is added later in `dockerfile.final`.
+An Ubuntu 22.04 image with Chrome, the Octo dependencies and the Octo Browser AppImage, running as the unprivileged `octo` user. It sets `HOME`, `APPIMAGE_EXTRACT_AND_RUN=1` and `OCTO_DATA` in `ENV` and ends with `CMD ["/bin/bash"]` instead of launching the browser — the entrypoint is added later in `dockerfile.final`.
 
 ```dockerfile
 FROM ubuntu:22.04
@@ -439,6 +339,7 @@ docker run -d --init --name octo-1 --security-opt seccomp:unconfined \
 - `-e OCTO_API_TOKEN` is required for authentication — the client reads it at startup and signs in without `/api/auth/login`.
 - `--security-opt seccomp:unconfined` is required for Chrome's sandbox.
 - Add `-p 127.0.0.1:<host_port>:58888` if you need to reach the local API from the host; the upstream command omits it, so `octo-1` as shown is only controllable from inside the container (or from other containers on the same Docker network).
+- Start profiles through the container's local API (`POST /api/profiles/start`, see [local-client.md](local-client.md)); the response contains `ws_endpoint` and `debug_port` — connect your automation library to them as in [automation.md](automation.md).
 
 ### Updating the Snapshot
 
@@ -490,7 +391,7 @@ Key points:
 
 - **Persist the profile cache** with a volume mount on `/home/octo/.Octo Browser/` so re-runs do not re-download fingerprint data.
 - **Bind the local API to the host loopback** (`-p 127.0.0.1:58895:58888`) — the local API has no auth.
-- **Use `OCTO_HEADLESS=1`** as in the Dockerfile; combined with `Xvfb` this is the supported headless mode.
+- **Use `OCTO_HEADLESS=1`** as in `entrypoint.sh` ([Step 3](#step-3-entrypointsh--launching-the-browser-in-the-container)); combined with `Xvfb` this is the supported headless mode.
 - **One container per parallel session** — the local API on `:58888` controls a single desktop app instance.
 - **Prefer `OCTO_API_TOKEN` over email/password in containers** — the client honours it at startup and signs in headlessly, so no `/api/auth/login` call is needed (see [Golden Image](#golden-image-pre-authenticated-snapshot)).
 - **Discover the local port from `~/.Octo Browser/local_port`** — the client writes its listening port there once it is up; poll that file instead of sleeping a fixed time.

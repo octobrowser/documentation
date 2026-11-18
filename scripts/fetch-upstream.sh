@@ -6,7 +6,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 EV="${1:?usage: $0 <evidence-dir>}"; mkdir -p "$EV/upstream"
 UA="Mozilla/5.0 (X11; Linux x86_64) docs-mirror-sync"
-PAGES="authentication rate-limiting errors profiles tags folders proxies teams fingerprint local-client docker automation"
+PAGES="authentication rate-limiting errors profiles tags folders proxies proxy-providers teams action-log fingerprint local-client docker automation"
 
 get() { curl -fsSL --max-time 60 -A "$UA" "$1" -o "$2" && echo "OK      $1" || { echo "FAILED  $1"; return 1; }; }
 
@@ -28,7 +28,7 @@ if [ -s "$EV/upstream/postman_collection.json" ]; then
   if [ -s "$PM_BASE" ]; then
     if diff -q "$PM_BASE" "$EV/upstream/postman.md" >/dev/null; then echo "IDENTICAL postman (vs baseline $(sed -n 's/^<!-- fetched \(.*\) -->$/\1/p' "$PM_BASE"))"
     else
-      diff -u "$PM_BASE" "$EV/upstream/postman.md" > "$EV/diff_postman.patch"
+      diff -u -F '^##' "$PM_BASE" "$EV/upstream/postman.md" > "$EV/diff_postman.patch"
       echo "DIFFERS   postman: $(grep -c '^[-+][^-+]' "$EV/diff_postman.patch") changed lines -> $EV/diff_postman.patch"
       echo "          sections touched:"; grep -E '^@@.*@@ ' "$EV/diff_postman.patch" | sed -E 's/^@@[^@]*@@ //' | sort -u | sed 's/^/            /'
       echo "          (after adopting, refresh baseline: cp $EV/upstream/postman.md $PM_BASE)"
@@ -49,13 +49,21 @@ diff -q llms.txt "$EV/upstream/llms.txt" >/dev/null && echo "IDENTICAL llms.txt"
 
 echo; echo "# OpenAPI diff (local openapi.json vs upstream server spec)"
 python3 - "$EV" <<'PY'
-import json, sys, difflib, pathlib
+import json, sys, difflib, pathlib, re
+from urllib.parse import urlparse
 ev = pathlib.Path(sys.argv[1])
 try:
     off = json.load(open(ev/'upstream/server_automation_api.json')); loc = json.load(open('openapi.json'))
 except Exception as e:
     print('spec diff skipped:', e); sys.exit(0)
 print('versions: upstream', off.get('info',{}).get('version'), '| local', loc.get('info',{}).get('version'))
+# Normalise: prefix each spec's server path (upstream uses .../api/v2/automation + relative
+# paths, we use full paths) and blank out path-param names ({uuid} vs {profile_uuid}).
+def keyed(spec):
+    base = urlparse((spec.get('servers') or [{}])[0].get('url', '')).path.rstrip('/')
+    return {re.sub(r'\{[^}]+\}', '{}', p if p.startswith(base + '/') else base + p): v
+            for p, v in spec['paths'].items()}
+off['paths'], loc['paths'] = keyed(off), keyed(loc)
 op, lp = set(off['paths']), set(loc['paths'])
 print('paths only upstream:', sorted(op-lp) or 'none')
 extra = sorted(lp-op)

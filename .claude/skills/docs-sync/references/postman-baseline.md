@@ -1,39 +1,68 @@
 # Octo Browser API
 
-<!-- fetched 2026-08-20 -->
+<!-- fetched 2026-11-18 -->
 
 Swagger schemas
- 
-Swagger schemas can be found here
- 
+
+Swagger schemas can be found here.
+
 General information
- 
+
 Get API Token
- [img: https://releases.octobrowser.net/doc/05-client-token.png] 
+
+API tokens are managed in Team settings → API tokens. A team can have several named tokens, each with its own permissions (see API token permissions below).
+
+The number of tokens depends on the subscription plan:
+
+  | Plan  | API tokens
+
+  | Base  | 1
+
+  | Team  | 3
+
+  | Advanced  | 5
+
+The token issued in earlier versions keeps working and is shown in the list as API token with full permissions. It counts towards the limit.
+
+On plans with a single team member, every token has full permissions.
+
+Pass the token in the X-Octo-Api-Token header.
+
+API token permissions
+
+Each token can only call the endpoints allowed by its permissions. A request without the required permission returns 403:
+
+{
+    "success": false,
+    "msg": "No permission",
+    "code": "no_permission",
+    "data": ""
+}
+
 Alternative API endpoints
- 
-You can use alternative API endpoints if you're provider is blocking recommended one
- 
+
+You can use alternative API endpoints if your provider is blocking the recommended one
+
 https://app.octobrowser-mirror1.com
 https://app.octobrowser-mirror1.net
 https://app.octobrowser-mirror1.org
- 
+
 Rate Limits and 429 errors.
- 
+
 Please check status codes for 429 code: different teams have different limits that depend on subscription level. All limits are shared within the team.
- 
+
 If you need higher limits, you can upgrade your subscription to a higher level.
- 
+
 If you need higher limits than those available with the Advanced subscription, please contact our Technical Support.
- 
+
 If you get code 429, stop all requests and pause for retry-after (from headers) seconds.
- 
+
 Not respecting or ignoring 429 responses may result in us enforcing stricter API limits for your team.
- 
+
 You can also check remaining requests and rate limit reset time by inspecting appropriate headers.
- 
+
 Certain API requests may involve more complex processing and, as a result, may cost more than one request point from the RPM (Requests Per Minute) or RPH (Requests Per Hour) limits for their execution. This serves to ensure fair usage and optimal performance for all users.
- 
+
 Retry-After: 0                       # if 0, you can send the next request
 X-Ratelimit-Limit: 200               # RPM (requests per minute) limit
 X-Ratelimit-Limit-Hour: 3000         # RPH (requests per hour) limit
@@ -41,144 +70,180 @@ X-Ratelimit-Remaining: 4             # remaining RPM
 X-Ratelimit-Remaining-Hour: 2999     # remaining RPH
 X-Ratelimit-Reset: 1671789217        # unix timestamp
 
- 
 Current limits for subscription plans
- 
 
-  
-  | Plan  | RPM  | RPH 
-   
-  | Base  | 50  | 500 
- 
-  | Team  | 100  | 1500 
- 
-  | Advanced  | 200, expandable up to 1,000  | 3,000, expandable up to 50,000 
-  
- 
+  | Plan  | RPM  | RPH
+
+  | Base  | 50  | 500
+
+  | Team  | 100  | 1500
+
+  | Advanced  | 200, expandable up to 1,000  | 3,000, expandable up to 50,000
 
 If you require limits exceeding 1,000 RPM and 50,000 RPH, please contact our Support.
- 
+
+Errors
+
+Every error has the same format:
+
+{
+    "success": false,
+    "msg": "Human-readable message",
+    "code": "machine.readable_code",
+    "data": ""
+}
+
+Use code in your code, msg may change. Some errors include details in data.
+
+Validation errors return 400 with the invalid fields:
+
+{
+    "validation_error": {
+        "body_params": [ ... ]
+    }
+}
+
+(query_params, path_params or body_params, depending on where the invalid field is.) A request body with a non-JSON Content-Type returns 415.
+
+Responses with status 400, 409 and 422 cost extra rate-limit points, so check your requests before retrying them.
+
+Data types: prices and balances are strings with a decimal number ("12.5"), dates are ISO 8601 in UTC without a timezone suffix ("2026-10-27T12:00:00").
+
 One-time profiles
- 
+
 Octo has support for one-time profiles that:
- 
- 
-- 
+
+-
 have faster creation/start time
- 
- 
-- 
+
+-
 are removed and not synchronized; they are faster to stop and don't clutter the profile list
- 
- 
-- 
+
+-
 are suitable for certain workloads, such as scraping tasks.
- 
- 
- 
+
 One request POST One-time profile is counted as 4 requests when calculating RPM/RPH limits.
- 
+
 How to run Octo Browser client in the "headless" mode:
- 
+
 Linux
- 
- 
-- 
+
+-
 open the Terminal in the folder where OctoBrowser.AppImage is located
- 
- 
-- 
+
+-
 run the command OCTO_HEADLESS=1 ./OctoBrowser.AppImage
- 
- 
- 
+
 Windows
- 
- 
-- 
+
+-
 open powershell terminal
- 
- 
-- 
+
+-
 run the command $env:OCTO_HEADLESS = "1"; start 'C:\Program Files\Octo Browser\Octo Browser.exe'
- 
- 
- 
+
 macOS
- 
- 
-- 
+
+-
 open the Terminal
- 
- 
-- 
+
+-
 run the command - OCTO_HEADLESS=1 open -a "Octo Browser"
- 
- 
- 
-Logging into Octo Browser using an API Token
- 
+
+How to run the Octo Browser client with a custom local port:
+
+Linux
+
+-
+open the Terminal in the folder where OctoBrowser.AppImage is located
+
+-
+run the command OCTO_LOCAL_PORT=55555 ./OctoBrowser.AppImage
+
 Windows
- 
+
+-
+open powershell terminal
+
+-
+run the command $env:OCTO_LOCAL_PORT = "55555"; start 'C:\Program Files\Octo Browser\Octo Browser.exe'
+
+macOS
+
+-
+open the Terminal
+
+-
+run the command - OCTO_LOCAL_PORT=55555 open -a "Octo Browser"
+
+Logging into Octo Browser using an API Token
+
+Windows
+
 Open PowerShell and run the following command:
- 
+
 $env:OCTO_API_TOKEN = "YOUR_API_TOKEN"; start 'C:\Program Files\Octo Browser\Octo Browser.exe'
 
 macOS
- 
+
 Open the Terminal and run the following command:
- 
+
 OCTO_API_TOKEN="YOUR_API_TOKEN" open -a "Octo Browser"
 
 Linux
- 
+
 Open the terminal in the folder where OctoBrowser.AppImage is located, and run the following command:
- 
+
 OCTO_API_TOKEN=YOUR_API_TOKEN ./OctoBrowser.AppImage
 
+The client works with the permissions of this token (see API token permissions). Local API requests that need a permission the token doesn't have fail with no_permission.
+
+Actions made in the client are shown in the Action Log as (API).
+
 Silent installation
- 
+
 Windows
- 
+
 To perform a "silent" Octo Browser installation using the terminal, run the .exe installer with the "qn" flag.
 Example for Powershell:
- 
+
 & '.\Octo_Browser_latest_win.exe' /qn
 
- 
 macOS
- 
+
 hdiutil attach ./Octo_Browser_latest_mac_arm64.dmg
 cp -R /Volumes/Octo\ Browser/Octo\ Browser.app /Applications
 hdiutil unmount /Volumes/Octo\ BrowserEndFragment
 
-
 ## Variables
 
-- `baseUrl` = `/`
+- `baseUrl` = `https://app.octobrowser.net`
 - `API_TOKEN` = ``
-- `PROFILE` = `Profile`
-- `TAG` = `Tag`
-- `Proxy` = `Proxy`
-- `UUID` = `UUID`
-- `PROFILE_UUID` = ``
-- `localUrl` = ``
+- `localUrl` = `http://localhost:58888`
 - `TAG_UUID` = `8e7c08beb89f4366aa854bdbd7473702`
+- `PROFILE_UUID` = ``
 - `PROXY_UUID` = `6cbecae429ba48d48836f22baf0e99a0`
+- `USER_ACCOUNT` = ``
+- `FOLDER_UUID` = ``
+- `FOLDER_UUID_OR_NAME` = ``
+- `PROVIDER_UUID` = ``
+- `MOBILE_PROVIDER_UUID` = ``
 
+## 📁 Public API
 
-## 📁 Profiles
+### 📁 Profiles
 
+#### GET Get Profiles
 
-### GET Get Profiles
-
-`GET //api/v2/automation/profiles?page_len=100&page=0&fields=title,description,folder,images_load_limit,launch_args,local_cache,extra_info,proxy,start_pages,tags,pinned_tag,status,last_active,version,storage_options,created_at,updated_at&ordering=active`
+`GET https://app.octobrowser.net/api/v2/automation/profiles?page_len=100&page=0&fields=title,description,folder,images_load_limit,launch_args,local_cache,extra_info,proxy,start_pages,tags,pinned_tag,status,last_active,version,storage_options,created_at,updated_at&ordering=active`
 
 Note: if a request contains two tags in the search_tags field, its result will only show profiles containing both tags, not all profiles featuring one of the tags.
 
-**Headers**
+Visibility: only profiles available to the token are returned
 
-- `X-Octo-Api-Token`: ``
+Without the Edit profiles permission, description is returned masked as **.
+
+status: 0 — not running, 1 — running, 2 — error.
 
 **Response 200 — Get Profiles**
 
@@ -269,35 +334,41 @@ Note: if a request contains two tags in the search_tags field, its result will o
 }
 ```
 
+#### POST Create Profile
 
-### POST Create Profile
-
-`POST //api/v2/automation/profiles`
+`POST https://app.octobrowser.net/api/v2/automation/profiles`
 
 Note: if you don't specify a given parameter, we will generate the best values for it on our servers. Change only the parameters you need to customize.
- 
+
+Required permission: Create profiles. Sending password also required Profile passwords.
+
 Profile data
- 
-Note: if you are unsure about how to update or create a profile, you can always modify an exiting profile in the browser and then check its data using the get profile API. In most cases, this will give you the information you need.
- 
+
+Note: if you are unsure about how to update or create a profile, you can always modify an existing profile in the browser and then check its data using the get profile API. In most cases, this will give you the information you need.
+
 Proxy
- 
+
 The proxy field accepts three forms:
- 
- 
-- {"uuid": "<proxy_uuid>"} — attach an existing proxy from the proxy list. A plain string, "proxy": "<proxy_uuid>", is accepted and means the same.
- 
-- {"type": ..., "host": ..., "port": ..., "login": ..., "password": ...} — a temporary proxy bound to this profile only: this creates it, or edits the profile's existing temporary proxy in place.
- 
-- null — detach the proxy from the profile; a temporary proxy is deleted in this case, as is the old temporary proxy when a profile is switched from it to a proxy from the list.
- 
- 
+
+-
+{"uuid": ""} — attach an existing proxy from the proxy list. A plain string, "proxy": "", is accepted and means the same.
+
+-
+{"type": ..., "host": ..., "port": ..., "login": ..., "password": ...} — a temporary proxy bound to this profile only: this creates it, or edits the profile's existing temporary proxy in place.
+
+-
+null — detach the proxy from the profile; a temporary proxy is deleted in this case, as is the old temporary proxy when a profile is switched from it to a proxy from the list.
+
 Temporary proxies cannot be referenced by uuid, since they belong to a single profile: passing the uuid of a temporary proxy fails with 404 proxy not found, same as an unknown uuid.
- 
+
+Folder
+
+The folder must be available to the token. Otherwise the request returns 403 with code no_permission.
+
 WebRTC options
- 
+
 This feature aims to hide users' actual IP addresses, especially when they are using a proxy. This option makes it possible to disable the transmission of real IP addresses through the non-proxied UDP protocol in WebRTC.
- 
+
 {
   "webrtc": {
         "type": "disable_non_proxied_udp",
@@ -307,8 +378,7 @@ This feature aims to hide users' actual IP addresses, especially when they are u
   }
 }
 
- 
-{          
+{
    "webrtc": {
         "type": "real",
         "data": null
@@ -317,8 +387,7 @@ This feature aims to hide users' actual IP addresses, especially when they are u
   }
 }
 
- 
-{          
+{
    "webrtc": {
         "type": "ip",
         "data": null
@@ -327,11 +396,10 @@ This feature aims to hide users' actual IP addresses, especially when they are u
   }
 }
 
- 
 Customize language, timezone and geolocation:
- 
+
 Example for language:
- 
+
 {
   "languages": {
     "type": "manual",
@@ -342,11 +410,10 @@ Example for language:
   }
 }
 
- 
 Example for timezone:
- 
+
 Note: currently you need to set daylight time manually (this will be fixed later)
- 
+
 {
   "timezone": {
     "type": "manual",
@@ -354,9 +421,8 @@ Note: currently you need to set daylight time manually (this will be fixed later
   }
 }
 
- 
 Example for geolocation:
- 
+
 {
 "geolocation":{
     "type": "manual",
@@ -368,9 +434,8 @@ Example for geolocation:
 }
 }
 
- 
 Storage Options
- 
+
 {
   "storage_options" : {
     "cookies": true,
@@ -383,25 +448,22 @@ Storage Options
    }
 }
 
- 
 Cookies
- 
+
 The cookies field of the request body takes either a JSON array of cookie objects or a string in one of the supported formats. The examples below are values of that field, not whole request bodies. A string value may also be base64-encoded, and the string form is capped at 16 MiB.
- 
+
 {
   "cookies": "cookie of permitted format"
 }
 
- 
 {
   "cookies": [...]
 }
 
- 
 We accept the following cookie formats:
- 
+
 JSON
- 
+
 [
   {
     "domain":".google.com",
@@ -416,9 +478,8 @@ JSON
   }
 ]
 
- 
 Mozilla
- 
+
 [
   {
     "Path raw":"/",
@@ -433,19 +494,16 @@ Mozilla
   }
 ]
 
- 
 Netscape
- 
+
 .google.com    TRUE    /    TRUE    1639134293    1P_JAR    2021-11-10-1    544
 
- 
-Each value must be separated by a tab (\t). 
- 
- 
+Each value must be separated by a tab (\t).
+
 .google.com\tTRUE\t/\tTRUE\t1639134293\t1P_JAR\t2021-11-10-1\t544
 
 Bookmarks
- 
+
 {
 "bookmarks": [
     {
@@ -459,29 +517,35 @@ Bookmarks
   ]
 }
 
- 
 Accessing extra_info from extensions
- 
+
 Data passed to extra_info can be accessed from browser extensions:
- 
- 
-- 
+
+-
 Add "permissions": ["cookies"] to manifest.json
- 
- 
-- 
+
+-
 Use chrome.cookies.getOctoProfileExtraInfo (usually from extension's service-worker) to access extra_info as JSON-string:
- 
- 
- 
+
 chrome.cookies.getOctoProfileExtraInfo((extraInfo) => {
   console.log(extraInfo);
 });
 
-**Headers**
+Fields
 
-- `Content-Type`: `application/json`
-- `X-Octo-Api-Token`: ``
+- tags — tag names, not UUIDs. Names that do not exist are ignored.
+
+- pinned_tag — tag name, not UUID. Added to tags if missing. A name that does not exist is ignored.
+
+- folder — folder UUID or name.
+
+- image — image UUID, as in the image field of a profile. Unknown UUID falls back to the default image.
+
+- extensions — <id>@<version>, as in the uuid field of Get Extensions.
+
+- images_load_limit — image size limit in bytes, null disables the limit.
+
+- proxy — also accepts a VPN object: {"type": "vpn", "vpn_protocol": "wireguard", "conf": "<base64 WireGuard config>"}.
 
 **Body**
 
@@ -530,9 +594,9 @@ chrome.cookies.getOctoProfileExtraInfo((extraInfo) => {
     "images_load_limit": 10240,
     "local_cache": true,
     "fingerprint": {
-        "os": "win", 
-        "os_version": "11", 
-        "os_arch": "x86", 
+        "os": "win",
+        "os_version": "11",
+        "os_arch": "x86",
         "renderer": "Nvidia GeForce GT 710",
         "screen": "1920x1080",
         "languages": {
@@ -568,7 +632,7 @@ chrome.cookies.getOctoProfileExtraInfo((extraInfo) => {
 }
 ```
 
-**Response  — Create Mobile Profile**
+**Response 201 — Create Mobile Profile**
 
 _request:_
 ```json
@@ -635,7 +699,7 @@ _request:_
     "os_arch": "x86",
     "os_version": "11",
     "ram": 8,
-    "screen": "1920x1080",
+    "screen": "1920x1080 @1 SDR",
     "timezone": {
       "type": "ip"
     },
@@ -689,6 +753,35 @@ _request:_
 }
 ```
 
+**Response 201 — Create Profile with VPN Proxy**
+
+_request:_
+```json
+{
+  "fingerprint": {
+    "os": "win"
+  },
+  "proxy": {
+    "conf": "W0ludGVyZmFjZV0KIyBUaGUgaW50ZXJuYWwgSVAgYWRkcmVzcyBhc3NpZ25lZCB0byB0aGlzIHNwZWNpZmljIGNsaWVudApBZGRyZXNzID0gMTAuMC4wLjIvMjQsIGZkYzk6MjgxZjowNGQ3OjllZTk6OjIvNjQKIyBUaGUgY2xpZW50J3MgdW5pcXVlIHByaXZhdGUga2V5ClByaXZhdGVLZXkgPSA8Q0xJRU5UXzFfUFJJVkFURV9LRVk+CiMgT3B0aW9uYWw6IFRoZSBETlMgc2VydmVyIHRoZSBjbGllbnQgc2hvdWxkIHVzZSB3aGlsZSBjb25uZWN0ZWQKRE5TID0gMS4xLjEuMSwgOC41LjUuNQoKW1BlZXJdCiMgVGhlIHB1YmxpYyBrZXkgb2YgdGhlIFdpcmVHdWFyZCBzZXJ2ZXIKUHVibGljS2V5ID0gPFNFUlZFUl9QVUJMSUNfS0VZPgojIFRoZSBwdWJsaWMgSVAgYWRkcmVzcyBvciBkb21haW4gbmFtZSBhbmQgcG9ydCBvZiB0aGUgc2VydmVyCkVuZHBvaW50ID0gaHR0cDovL3lvdXJkb21haW4uY29tOjU2NzQ1CiMgVHJhZmZpYyB0byByb3V0ZSB0aHJvdWdoIHRoZSB0dW5uZWwuIAojIFVzZSAwLjAuMC4wLzAsIDo6LzAgdG8gcm91dGUgYWxsIGludGVybmV0IHRyYWZmaWMuIAojIFVzZSAxMC4wLjAuMC8yNCB0byBvbmx5IHJvdXRlIHRyYWZmaWMgZGVzdGluZWQgZm9yIHRoZSBWUE4gc3VibmV0LgpBbGxvd2VkSVBzID0gMC4wLjAuMC8wLCA6Oi8wCiMgT3B0aW9uYWw6IFNlbmRzIGEgcGFja2V0IGV2ZXJ5IDI1IHNlY29uZHMgdG8ga2VlcCB0aGUgY29ubmVjdGlvbiBhbGl2ZSBiZWhpbmQgTkFUcwpQZXJzaXN0ZW50S2VlcGFsaXZlID0gMjU=",
+    "syn_mode": "profile_based",
+    "type": "vpn",
+    "vpn_protocol": "wireguard"
+  },
+  "title": "Test profile from api"
+}
+```
+
+```json
+{
+  "code": null,
+  "data": {
+    "uuid": "e0f29146f19a4707970e2d82abf545e7"
+  },
+  "msg": "",
+  "success": true
+}
+```
+
 **Response 201 — Create Profile with netscape cookies**
 
 _request:_
@@ -736,17 +829,37 @@ _request:_
 }
 ```
 
+#### DELETE Delete Profiles
 
-### DELETE Delete Profiles
+`DELETE https://app.octobrowser.net/api/v2/automation/profiles`
 
-`DELETE //api/v2/automation/profiles`
+Deletes profiles by uuid, from 1 to 100 per request.
 
-skip_trash_bin: trueis enabled by default. This speeds up your queries; moreover, you won't need these profiles later.
+Required permission: Delete profiles.
 
-**Headers**
+skip_trash_bin is true by default: profiles are deleted permanently. This is faster and suits profiles you won't need later.
 
-- `Content-Type`: `application/json`
-- `X-Octo-Api-Token`: ``
+Pass "skip_trash_bin": false to move profiles to the trash bin instead. They can be found with Get Trash Bin and returned with Restore Profiles.
+
+The response splits the requested UUIDs into four lists:
+
+-
+deleted_uuids — deleted;
+
+-
+active_uuids — running, not deleted;
+
+-
+protected_uuids — protected from deletion with the API, not deleted;
+
+-
+not_found_uuids — not found in your team or the token has no access to them.
+
+If none of the requested profiles is accessible, the request returns 403 with code profiles.access_error. If nothing was deleted, it returns 404 with the same three lists in errors.
+
+200 does not mean profiles were deleted: check deleted_uuids.
+
+The request has a JSON body. Make sure your HTTP client sends a body with DELETE requests.
 
 **Body**
 
@@ -781,21 +894,136 @@ _request:_
     ],
     "deleted_uuids": [
       "a4708a63d55742a09b7f1a600c248484"
-    ]
+    ],
+    "not_found_uuids": [
+      "9f0e1d2c3b4a49588776655443322110"
+    ],
+    "protected_uuids": []
   },
   "msg": "Profiles deleted",
   "success": true
 }
 ```
 
+#### GET Get Trash Bin
 
-### GET Get Profile
+`GET https://app.octobrowser.net/api/v2/automation/profiles/trash_bin?page=0&page_len=10&search=`
 
-`GET //api/v2/automation/profiles/:uuid`
+Returns profiles in the team trash bin, newest first.
 
-**Headers**
+Required permission: Delete profiles
 
-- `X-Octo-Api-Token`: ``
+Each profile can be restored for free a limited number of times per period. After that, a restore costs tokens. The restore object shows the current terms:
+
+-
+paid — true if restoring this profile now costs tokens;
+
+-
+price — the price in tokens ("0" for a free restore);
+
+-
+free_at — when the next free restore becomes available (null if the restore is free now).
+
+deleted_by is the email of the user who deleted the profile, or (API) if it was deleted with an API token. by_automation_api is true for profiles deleted through the API.
+
+**Response 200 — Get Trash Bin**
+
+```json
+{
+  "code": null,
+  "data": [
+    {
+      "by_automation_api": true,
+      "deleted_at": "2026-10-27T10:15:00",
+      "deleted_by": "Scraper (API)",
+      "restore": {
+        "free_at": null,
+        "paid": false,
+        "price": "0"
+      },
+      "title": "Profile 1",
+      "uuid": "4bbdc824762342f485bed4968533b28a"
+    },
+    {
+      "by_automation_api": false,
+      "deleted_at": "2026-10-26T18:40:00",
+      "deleted_by": "user@example.com",
+      "restore": {
+        "free_at": "2026-10-28T18:40:00",
+        "paid": true,
+        "price": "1"
+      },
+      "title": "Profile 2",
+      "uuid": "4565940d5b9b41f99341fae6f5f3d855"
+    }
+  ],
+  "msg": "",
+  "page": 0,
+  "success": true,
+  "total_count": 2
+}
+```
+
+#### POST Restore Profiles
+
+`POST https://app.octobrowser.net/api/v2/automation/profiles/trash_bin/restore`
+
+Restores profiles from the trash bin, from 1 to 100 per request.
+
+Required permission: Delete profiles.
+
+Restores the profiles that can be restored and skips the rest. The response splits the requested UUIDs into three lists:
+
+-
+restored_uuids — restored;
+
+-
+payment_required_uuids — in the trash bin, but the restore costs tokens (see restore in Get Trash Bin). Paid restores are not available with the API: these profiles stay in the trash bin, restore them in the Octo Browser client;
+
+-
+not_found_uuids — not in the trash bin of your team.
+
+  | Status  | Code  | When
+
+  | 403  | profiles.maximum_saved_error  | Restoring would exceed the profile limit of the plan. Nothing is restored
+
+200 does not mean profiles were restored: check restored_uuids.
+
+**Body**
+
+```json
+{
+  "uuids": [
+    "{PROFILE_UUID}"
+  ]
+}
+```
+
+**Response 200 — Restore Profiles**
+
+```json
+{
+  "data": {
+    "not_found_uuids": [
+      "9f0e1d2c3b4a49588776655443322110"
+    ],
+    "payment_required_uuids": [
+      "4565940d5b9b41f99341fae6f5f3d855"
+    ],
+    "restored_uuids": [
+      "4bbdc824762342f485bed4968533b28a"
+    ]
+  },
+  "msg": "",
+  "success": true
+}
+```
+
+#### GET Get Profile
+
+`GET https://app.octobrowser.net/api/v2/automation/profiles/:uuid`
+
+status: 0 — not running, 1 — running, 2 — error.
 
 **Response 200 — Get Profile**
 
@@ -1001,7 +1229,7 @@ _request:_
       "os_version": "11",
       "ram": 16,
       "renderer": "NVIDIA GeForce GT 710",
-      "screen": "1440x900",
+      "screen": "1440x900 @1 SDR",
       "timezone": {
         "data": null,
         "type": "ip"
@@ -1043,31 +1271,52 @@ _request:_
 }
 ```
 
+#### PATCH Update Profile
 
-### PATCH Update Profile
-
-`PATCH //api/v2/automation/profiles/:uuid`
+`PATCH https://app.octobrowser.net/api/v2/automation/profiles/:uuid`
 
 Note: It's possible to update running profiles; however, we recommend updating only stopped profiles for synchronization reasons.
- 
+
+Required permission: Edit profiles.
+
 Proxy
- 
+
 The proxy field accepts three forms:
- 
- 
-- {"uuid": "<proxy_uuid>"} — attach an existing proxy from the proxy list. A plain string, "proxy": "<proxy_uuid>", is accepted and means the same.
- 
-- {"type": ..., "host": ..., "port": ..., "login": ..., "password": ...} — a temporary proxy bound to this profile only: this creates it, or edits the profile's existing temporary proxy in place.
- 
-- null — detach the proxy from the profile; a temporary proxy is deleted in this case, as is the old temporary proxy when a profile is switched from it to a proxy from the list.
- 
- 
+
+-
+{"uuid": ""} — attach an existing proxy from the proxy list. A plain string, "proxy": "", is accepted and means the same.
+
+-
+{"type": ..., "host": ..., "port": ..., "login": ..., "password": ...} — a temporary proxy bound to this profile only: this creates it, or edits the profile's existing temporary proxy in place.
+
+-
+null — detach the proxy from the profile; a temporary proxy is deleted in this case, as is the old temporary proxy when a profile is switched from it to a proxy from the list.
+
 Temporary proxies cannot be referenced by uuid, since they belong to a single profile: passing the uuid of a temporary proxy fails with 404 proxy not found, same as an unknown uuid.
+
+Folder
+
+The folder must be available to the token. Otherwise the request returns 403 with code no_permission.
+
+Fields
+
+- tags — tag names, not UUIDs. Names that do not exist are ignored. [] removes all tags.
+
+- pinned_tag — tag name, not UUID. Added to tags if missing. A name that does not exist is ignored. null unpins the tag.
+
+- folder — folder UUID or name. null removes the profile from its folder.
+
+- image — image UUID, as in the image field of a profile.
+
+- extensions — <id>@<version>, as in the uuid field of Get Extensions.
+
+- images_load_limit — image size limit in bytes, null disables the limit.
+
+- proxy — also accepts a VPN object: {"type": "vpn", "vpn_protocol": "wireguard", "conf": "<base64 WireGuard config>"}.
 
 **Headers**
 
 - `Content-Type`: `application/json`
-- `X-Octo-Api-Token`: ``
 
 **Body**
 
@@ -1399,7 +1648,7 @@ _request:_
     },
     "ram": 16,
     "renderer": "NVIDIA GeForce GT 750M",
-    "screen": "2560x1440 (2K)",
+    "screen": "2560x1440 @2 SDR P3",
     "timezone": {
       "type": "ip"
     },
@@ -1430,17 +1679,20 @@ _request:_
 }
 ```
 
+#### POST Import Cookies
 
-### POST Import Cookies
+`POST https://app.octobrowser.net/api/v2/automation/profiles/:uuid/import_cookies`
 
-`POST //api/v2/automation/profiles/:uuid/import_cookies`
+Cookies are applied on the next profile start. Returns 409 (profiles.started) if the profile is running.
+
+Required permission: Create profiles.
 
 Cookies format
- 
+
 We accept the following cookie formats:
- 
+
 JSON
- 
+
 [
   {
     "domain":".google.com",
@@ -1455,9 +1707,8 @@ JSON
   }
 ]
 
- 
 Mozilla
- 
+
 [
   {
     "Path raw":"/",
@@ -1472,41 +1723,35 @@ Mozilla
   }
 ]
 
- 
 Netscape
- 
+
 .google.com    TRUE    /    TRUE    1639134293    1P_JAR    2021-11-10-1    544
 
- 
-Each value must be tab (\t) separated. 
- 
- 
+Each value must be tab (\t) separated.
+
 .google.com\tTRUE\t/\tTRUE\t1639134293\t1P_JAR\t2021-11-10-1\t544
 
 Request format
- 
+
 JSON
- 
+
 cookies field allows a string or JSON-array
- 
+
 {
   "cookies": "cookie of permitted format"
 }
 
- 
 {
   "cookies": [...]
 }
 
- 
 File
- 
+
 you can send cookies in MultipartFormdata format in the cookies field
 
 **Headers**
 
 - `Content-Type`: `application/json`
-- `X-Octo-Api-Token`: ``
 
 **Body**
 
@@ -1600,25 +1845,27 @@ _request:_
 }
 ```
 
+#### POST Transfer profiles
 
-### POST Transfer profiles
-
-`POST //api/v2/automation/profiles/transfer`
+`POST https://app.octobrowser.net/api/v2/automation/profiles/transfer`
 
 This transfers profiles from one account to another.
 
 Note: The maximum profiles count limit is 100 entries at once.
 
+Required permission: Transfer profiles.
+
+200 means at least one profile was transferred, the rest are skipped without being listed.
+
 **Headers**
 
 - `Content-Type`: `application/json`
-- `X-Octo-Api-Token`: ``
 
 **Body**
 
 ```json
 {
-  "receiver_email": "{{USER_ACCOUNT}}",
+  "receiver_email": "",
   "transfer_proxy": true,
   "uuids": [
     ""
@@ -1668,40 +1915,23 @@ _request:_
 }
 ```
 
+#### POST Force Stop Profile
 
-### POST Force Stop Profile
+`POST https://app.octobrowser.net/api/v2/automation/profiles/:uuid/force_stop`
 
-`POST //api/v2/automation/profiles/:uuid/force_stop`
+Marks a running profile as stopped without syncing. Unsynced changes are lost.
 
-This forcibly stops the currently active profile. If you store this profile's version on your side, you can additionally specify the optional "version" parameter to perform the version consistency check; otherwise the version parameter should be null, which will be enough for most cases.
+version (optional, number or string): running session version, 409 on mismatch. Omit to stop the current session.
 
 **Headers**
 
 - `Content-Type`: `application/json`
-- `X-Octo-Api-Token`: ``
 
 **Body**
 
 ```json
 {
     "version": 1 // [optional]
-}
-```
-
-**Response  — Force Stop Profile (with consistency check)**
-
-_request:_
-```json
-{
-  "version": 1
-}
-```
-
-```json
-{
-  "data": "",
-  "msg": "Profile stopped",
-  "success": true
 }
 ```
 
@@ -1722,19 +1952,34 @@ _request:_
 }
 ```
 
+**Response 200 — Force Stop Profile (with consistency check)**
 
-### POST Mass Force Stop Profile
+_request:_
+```json
+{
+  "version": 1
+}
+```
 
-`POST //api/v2/automation/profiles/force_stop`
+```json
+{
+  "data": "",
+  "msg": "Profile stopped",
+  "success": true
+}
+```
+
+#### POST Mass Force Stop Profile
+
+`POST https://app.octobrowser.net/api/v2/automation/profiles/force_stop`
 
 Forcibly stops several running profiles, listed by uuid in the uuids field — from 1 to 100 per request. Unlike the single-profile endpoint, this one takes no version parameter and performs no version consistency check.
- 
+
 The failed field of the response lists the uuids that were not stopped (for example, profiles that weren't running). The response status is 200 when all requested profiles were stopped, 207 Multi-Status when only some were, and 400 when none were — in the last case the failed list is returned in errors.
 
 **Headers**
 
 - `Content-Type`: `application/json`
-- `X-Octo-Api-Token`: ``
 
 **Body**
 
@@ -1773,14 +2018,14 @@ The failed field of the response lists the uuids that were not stopped (for exam
 }
 ```
 
+#### GET Get Export profiles
 
-### GET Get Export profiles
+`GET https://app.octobrowser.net/api/v2/automation/profiles/export?page=0&page_len=10`
 
-`GET //api/v2/automation/profiles/export?page=0&page_len=10`
+Required permission: Transfer profiles.
 
 **Headers**
 
-- `X-Octo-Api-Token`: ``
 - `Content-Type`: `application/json`
 
 **Response 200 — Get Export profiles**
@@ -1803,14 +2048,14 @@ The failed field of the response lists the uuids that were not stopped (for exam
 }
 ```
 
+#### GET Get Export profile
 
-### GET Get Export profile
+`GET https://app.octobrowser.net/api/v2/automation/profiles/export/:uuid`
 
-`GET //api/v2/automation/profiles/export/:uuid`
+Required permission: Transfer profiles.
 
 **Headers**
 
-- `X-Octo-Api-Token`: ``
 - `Content-Type`: `application/json`
 
 **Response 200 — Get Export profile**
@@ -1827,20 +2072,22 @@ The failed field of the response lists the uuids that were not stopped (for exam
 }
 ```
 
+#### POST Export profiles
 
-### POST Export profiles
-
-`POST //api/v2/automation/profiles/export`
+`POST https://app.octobrowser.net/api/v2/automation/profiles/export`
 
 Up to 100 profiles per request allowed.
- 
+
 In the event of duplicate UUIDs in a request, they will be disregarded without any notifications.
- 
+
 This is a paid-for action that costs 0,5 tokens per profile.
+
+Required permission: Transfer profiles.
+
+200 does not mean profiles were exported: check exported and failed.
 
 **Headers**
 
-- `X-Octo-Api-Token`: ``
 - `Content-Type`: `application/json`
 
 **Body**
@@ -1902,16 +2149,20 @@ _request:_
 }
 ```
 
+#### POST Import profiles
 
-### POST Import profiles
-
-`POST //api/v2/automation/profiles/import`
+`POST https://app.octobrowser.net/api/v2/automation/profiles/import`
 
 Up to 100 profiles per request allowed.
 
+Required permission: Create profiles.
+
+Folder
+
+The folder must be available to the token. Otherwise the request returns 403 with code no_permission.
+
 **Headers**
 
-- `X-Octo-Api-Token`: ``
 - `Content-Type`: `application/json`
 
 **Body**
@@ -1996,22 +2247,22 @@ _request:_
 }
 ```
 
+#### POST Set Profiles Password
 
-### POST Set Profiles Password
+`POST https://app.octobrowser.net/api/v2/automation/profiles/set_password`
 
-`POST //api/v2/automation/profiles/set_password`
+Required permission: Profile passwords.
 
 Sets one and the same password on every profile listed in profiles.
- 
+
 old_password is also a single value: it must match the current password of every listed profile that already has one. It can be omitted when none of the listed profiles has a password yet.
- 
+
 The request is all-or-nothing: if the old password doesn't match for one of the profiles, or one of them is currently running on another machine, the whole request fails with 400 and no profile is changed.
- 
+
 password length: 4–255 characters.
 
 **Headers**
 
-- `X-Octo-Api-Token`: `<GET_TOKEN_IN_CLIENT>`
 - `Content-Type`: `application/json`
 
 **Body**
@@ -2027,7 +2278,7 @@ password length: 4–255 characters.
 }
 ```
 
-**Response  — Set Profiles Password**
+**Response 200 — Set Profiles Password**
 
 ```json
 {
@@ -2037,23 +2288,19 @@ password length: 4–255 characters.
 }
 ```
 
+#### POST Clear Profile Password
 
-### POST Clear Profile Password
+`POST https://app.octobrowser.net/api/v2/automation/profiles/:uuid/clear_password`
 
-`POST //api/v2/automation/profiles/:uuid/clear_password`
+Required permission: Profile passwords.
 
 Unsets the password of the profile given by uuid. The profile's current password must be passed in the request body; if it doesn't match, the request fails with 400.
- 
+
 {
   "password": "current_profile_password"
 }
 
-**Headers**
-
-- `X-Octo-Api-Token`: `<GET_TOKEN_IN_CLIENT>`
-- `Content-Type`: `application/json`
-
-**Response  — Clear Profile Password**
+**Response 200 — Clear Profile Password**
 
 _request:_
 ```json
@@ -2070,17 +2317,11 @@ _request:_
 }
 ```
 
+### 📁 Tags
 
-## 📁 Tags
+#### GET Get Tags
 
-
-### GET Get Tags
-
-`GET //api/v2/automation/tags`
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
+`GET https://app.octobrowser.net/api/v2/automation/tags`
 
 **Response 200 — Get Tags**
 
@@ -2113,10 +2354,11 @@ _request:_
 }
 ```
 
+#### POST Create Tag
 
-### POST Create Tag
+`POST https://app.octobrowser.net/api/v2/automation/tags`
 
-`POST //api/v2/automation/tags`
+Required permission: Edit tags.
 
 Available colors for tags:
 
@@ -2125,7 +2367,6 @@ grey blue cyan orange green purple red yellow
 **Headers**
 
 - `Content-Type`: `application/json`
-- `X-Octo-Api-Token`: ``
 
 **Body**
 
@@ -2150,14 +2391,11 @@ grey blue cyan orange green purple red yellow
 }
 ```
 
+#### DELETE Remove Tag
 
-### DELETE Remove Tag
+`DELETE https://app.octobrowser.net/api/v2/automation/tags/:uuid`
 
-`DELETE //api/v2/automation/tags/:uuid`
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
+Required permission: Edit tags.
 
 **Response 200 — Remove Tag**
 
@@ -2169,15 +2407,15 @@ grey blue cyan orange green purple red yellow
 }
 ```
 
+#### PATCH Update Tag
 
-### PATCH Update Tag
+`PATCH https://app.octobrowser.net/api/v2/automation/tags/:uuid`
 
-`PATCH //api/v2/automation/tags/:uuid`
+Required permission: Edit tags.
 
 **Headers**
 
 - `Content-Type`: `application/json`
-- `X-Octo-Api-Token`: ``
 
 **Body**
 
@@ -2210,17 +2448,13 @@ _request:_
 }
 ```
 
+### 📁 Folders
 
-## 📁 Folders
+#### GET Get Folders
 
+`GET https://app.octobrowser.net/api/v2/automation/folders`
 
-### GET Get Folders
-
-`GET //api/v2/automation/folders`
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
+Returns folders available to the token. A token with restricted folder access gets only its folders, possibly an empty list.
 
 **Response 200 — Get Folders**
 
@@ -2238,10 +2472,11 @@ _request:_
 }
 ```
 
+#### POST Create Folder
 
-### POST Create Folder
+`POST https://app.octobrowser.net/api/v2/automation/folders`
 
-`POST //api/v2/automation/folders`
+Required permission: Edit folders. Setting assignable_wo_permission also requires Manage team.
 
 Available colors for tags:
 
@@ -2250,7 +2485,6 @@ grey blue cyan orange green purple red yellow
 **Headers**
 
 - `Content-Type`: `application/json`
-- `X-Octo-Api-Token`: ``
 
 **Body**
 
@@ -2281,14 +2515,11 @@ grey blue cyan orange green purple red yellow
 }
 ```
 
+#### DELETE Remove Folder
 
-### DELETE Remove Folder
+`DELETE https://app.octobrowser.net/api/v2/automation/folders/:uuid_or_name`
 
-`DELETE //api/v2/automation/folders/:uuid_or_name`
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
+Required permission: Edit folders. Setting assignable_wo_permission also requires Manage team.
 
 **Response 200 — Remove Folder**
 
@@ -2300,22 +2531,22 @@ grey blue cyan orange green purple red yellow
 }
 ```
 
+#### PATCH Update Folder
 
-### PATCH Update Folder
+`PATCH https://app.octobrowser.net/api/v2/automation/folders/:uuid_or_name`
 
-`PATCH //api/v2/automation/folders/:uuid_or_name`
+Required permission: Edit folders. Setting assignable_wo_permission also requires Manage team.
 
 **Headers**
 
 - `Content-Type`: `application/json`
-- `X-Octo-Api-Token`: ``
 
 **Body**
 
 ```json
 {
-    "name": "supertag1",
-    "color": "orange" //optional
+    "name": "folder",  // optional
+    "assignable_wo_permission": true // optional
 }
 ```
 
@@ -2341,19 +2572,13 @@ _request:_
 }
 ```
 
-
-## 📁 Proxies
+### 📁 Proxies
 
 Proxies from the list are attached to profiles through the proxy field of profile create/update, by uuid.
 
+#### GET Get Proxies
 
-### GET Get Proxies
-
-`GET //api/v2/automation/proxies`
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
+`GET https://app.octobrowser.net/api/v2/automation/proxies`
 
 **Response 200 — Get Proxies**
 
@@ -2371,6 +2596,21 @@ Proxies from the list are attached to profiles through the proxy field of profil
       "title": "example proxy",
       "type": "socks5",
       "uuid": "963d30cb2d7247c89da222c8a9dcab29"
+    },
+    {
+      "change_ip_url": null,
+      "conf": "W0ludGVyZmFjZV0KIyBUaGUgaW50ZXJuYWwgSVAgYWRkcmVzcyBhc3NpZ25lZCB0byB0aGlzIHNwZWNpZmljIGNsaWVudApBZGRyZXNzID0gMTAuMC4wLjIvMjQsIGZkYzk6MjgxZjowNGQ3OjllZTk6OjIvNjQKIyBUaGUgY2xpZW50J3MgdW5pcXVlIHByaXZhdGUga2V5ClByaXZhdGVLZXkgPSA8Q0xJRU5UXzFfUFJJVkFURV9LRVk+CiMgT3B0aW9uYWw6IFRoZSBETlMgc2VydmVyIHRoZSBjbGllbnQgc2hvdWxkIHVzZSB3aGlsZSBjb25uZWN0ZWQKRE5TID0gMS4xLjEuMSwgOC41LjUuNQoKW1BlZXJdCiMgVGhlIHB1YmxpYyBrZXkgb2YgdGhlIFdpcmVHdWFyZCBzZXJ2ZXIKUHVibGljS2V5ID0gPFNFUlZFUl9QVUJMSUNfS0VZPgojIFRoZSBwdWJsaWMgSVAgYWRkcmVzcyBvciBkb21haW4gbmFtZSBhbmQgcG9ydCBvZiB0aGUgc2VydmVyCkVuZHBvaW50ID0gaHR0cDovL3lvdXJkb21haW4uY29tOjU2NzQ1CiMgVHJhZmZpYyB0byByb3V0ZSB0aHJvdWdoIHRoZSB0dW5uZWwuIAojIFVzZSAwLjAuMC4wLzAsIDo6LzAgdG8gcm91dGUgYWxsIGludGVybmV0IHRyYWZmaWMuIAojIFVzZSAxMC4wLjAuMC8yNCB0byBvbmx5IHJvdXRlIHRyYWZmaWMgZGVzdGluZWQgZm9yIHRoZSBWUE4gc3VibmV0LgpBbGxvd2VkSVBzID0gMC4wLjAuMC8wLCA6Oi8wCiMgT3B0aW9uYWw6IFNlbmRzIGEgcGFja2V0IGV2ZXJ5IDI1IHNlY29uZHMgdG8ga2VlcCB0aGUgY29ubmVjdGlvbiBhbGl2ZSBiZWhpbmQgTkFUcwpQZXJzaXN0ZW50S2VlcGFsaXZlID0gMjU=",
+      "external_id": "my_custom_id=1",
+      "host": "http://yourdomain.com",
+      "login": "",
+      "password": "",
+      "port": 56745,
+      "profiles_count": 0,
+      "syn_mode": "profile_based",
+      "title": "my-vpn-proxy",
+      "type": "vpn",
+      "uuid": "23b512d979394d4097c5a6ddf04217b0",
+      "vpn_protocol": "wireguard"
     }
   ],
   "msg": "",
@@ -2378,15 +2618,67 @@ Proxies from the list are attached to profiles through the proxy field of profil
 }
 ```
 
+#### POST Create Proxy
 
-### POST Create Proxy
+`POST https://app.octobrowser.net/api/v2/automation/proxies`
 
-`POST //api/v2/automation/proxies`
+Required permission: Create proxies.
+
+The request body has two forms, chosen by type: a regular proxy and a VPN one.
+
+  | Field  | Type  | Required  | Description
+
+  | type  | string  | yes  | ssh, http, https, socks5.
+
+  | title  | string  | yes  | Proxy name, 1–255 characters.
+
+  | host  | string  | yes  | IPv4 address, IPv6 address or domain name (4–253 characters).
+
+  | port  | integer  | yes  | 0–65535
+
+  | login  | string  | no  | Up to 255 characters.
+
+  | password  | string  | no  | Same rules as login.
+
+  | change_ip_url  | string  | no  | Any http/https url the provider gives you for rotating the ip.
+
+  | external_id  | string  | no  | Your own identifier, up to 255 characters. Must be a string.
+
+VPN proxies.
+
+Send type: "vpn" and the request body switches to the VPN form below.
+
+Request body (VPN form):
+
+  | Field  | Type  | Required  | Description
+
+  | type  | string  | yes  | vpn
+
+  | title  | string  | yes  | Proxy name, 1–255 characters.
+
+  | conf  | string  | yes  | WireGuard configuration file, base64-encoded. Must contain an Endpoint = host:port line. Up to 16 KB before encoding.
+
+  | syn_mode  | string  | no  | TCP/IP fingerprint the tunnel emulates. Default profile_based. See the values below.
+
+  | vpn_protocol  | string  | no  | wireguard the only supported value, and the default. For AWG configuration use wireguard too.
+
+  | external_id  | string  | no  | Your own identifier, up to 255 characters.
+
+host, port, login, password and change_ip_url are not accepted in the VPN form: the endpoint comes from the config, and a tunnel has no credentials or rotation url. Sending any of them returns 400.
+
+syn_mode values:
+
+  | Value  | Meaning
+
+  | profile_based  | Follow the OS of the profile the proxy is attached to (default).
+
+  | win / mac / android  | Always emulate this OS, whatever the profile is.
+
+  | real  | Keep the real fingerprint of the machine running the browser.
 
 **Headers**
 
 - `Content-Type`: `application/json`
-- `X-Octo-Api-Token`: ``
 
 **Body**
 
@@ -2438,14 +2730,47 @@ _request:_
 }
 ```
 
+**Response 201 — Create VPN Proxy**
 
-### DELETE Remove Proxy
+_request:_
+```json
+{
+  "conf": "W0ludGVyZmFjZV0KIyBUaGUgaW50ZXJuYWwgSVAgYWRkcmVzcyBhc3NpZ25lZCB0byB0aGlzIHNwZWNpZmljIGNsaWVudApBZGRyZXNzID0gMTAuMC4wLjIvMjQsIGZkYzk6MjgxZjowNGQ3OjllZTk6OjIvNjQKIyBUaGUgY2xpZW50J3MgdW5pcXVlIHByaXZhdGUga2V5ClByaXZhdGVLZXkgPSA8Q0xJRU5UXzFfUFJJVkFURV9LRVk+CiMgT3B0aW9uYWw6IFRoZSBETlMgc2VydmVyIHRoZSBjbGllbnQgc2hvdWxkIHVzZSB3aGlsZSBjb25uZWN0ZWQKRE5TID0gMS4xLjEuMSwgOC41LjUuNQoKW1BlZXJdCiMgVGhlIHB1YmxpYyBrZXkgb2YgdGhlIFdpcmVHdWFyZCBzZXJ2ZXIKUHVibGljS2V5ID0gPFNFUlZFUl9QVUJMSUNfS0VZPgojIFRoZSBwdWJsaWMgSVAgYWRkcmVzcyBvciBkb21haW4gbmFtZSBhbmQgcG9ydCBvZiB0aGUgc2VydmVyCkVuZHBvaW50ID0gaHR0cDovL3lvdXJkb21haW4uY29tOjU2NzQ1CiMgVHJhZmZpYyB0byByb3V0ZSB0aHJvdWdoIHRoZSB0dW5uZWwuIAojIFVzZSAwLjAuMC4wLzAsIDo6LzAgdG8gcm91dGUgYWxsIGludGVybmV0IHRyYWZmaWMuIAojIFVzZSAxMC4wLjAuMC8yNCB0byBvbmx5IHJvdXRlIHRyYWZmaWMgZGVzdGluZWQgZm9yIHRoZSBWUE4gc3VibmV0LgpBbGxvd2VkSVBzID0gMC4wLjAuMC8wLCA6Oi8wCiMgT3B0aW9uYWw6IFNlbmRzIGEgcGFja2V0IGV2ZXJ5IDI1IHNlY29uZHMgdG8ga2VlcCB0aGUgY29ubmVjdGlvbiBhbGl2ZSBiZWhpbmQgTkFUcwpQZXJzaXN0ZW50S2VlcGFsaXZlID0gMjU=",
+  "external_id": "my_custom_id=1",
+  "syn_mode": "profile_based",
+  "title": "my-vpn-proxy",
+  "type": "vpn",
+  "vpn_protocol": "wireguard"
+}
+```
 
-`DELETE //api/v2/automation/proxies/:uuid`
+```json
+{
+  "code": null,
+  "data": {
+    "change_ip_url": null,
+    "external_id": "my_custom_id=1",
+    "host": "http://yourdomain.com",
+    "login": "",
+    "password": "",
+    "port": 56745,
+    "profiles_count": 0,
+    "syn_mode": "profile_based",
+    "title": "my-vpn-proxy",
+    "type": "vpn",
+    "uuid": "23b512d979394d4097c5a6ddf04217b0",
+    "vpn_protocol": "wireguard"
+  },
+  "msg": "",
+  "success": true
+}
+```
 
-**Headers**
+#### DELETE Remove Proxy
 
-- `X-Octo-Api-Token`: ``
+`DELETE https://app.octobrowser.net/api/v2/automation/proxies/:uuid`
+
+Required permission: Delete proxies.
 
 **Response 200 — Remove Proxy**
 
@@ -2457,15 +2782,49 @@ _request:_
 }
 ```
 
+#### PATCH Update Proxy
 
-### PATCH Update Proxy
+`PATCH https://app.octobrowser.net/api/v2/automation/proxies/:uuid`
 
-`PATCH //api/v2/automation/proxies/:uuid`
+Required permission: Edit proxies.
+
+Request body (regular form)
+
+  | Field  | Type  | Description
+
+  | type  | string  | New proxy type. Same values as in POST, plus vpn to convert the proxy see below.
+
+  | title  | string  | 1–255 characters.
+
+  | host  | string  | IPv4, IPv6 or domain name.
+
+  | port  | integer  | 0–65535.
+
+  | login, password  | string  | Up to 255 characters each. Pass an empty string to clear.
+
+  | change_ip_url  | string  |
+
+  | external_id  | string  | Up to 255 characters.
+
+Request body (VPN form)
+
+  | Field  | Type  | Description
+
+  | type  | string  | vpn. Required only when converting a regular proxy into a VPN one. for a proxy that is already VPN it can be omitted.
+
+  | title  | string  | 1–255 characters.
+
+  | conf  | string  | New WireGuard/AWG configuration, base64-encoded, with an Endpoint = host:port line. Required when converting a regular proxy into a VPN one, optional otherwise. Replaces the stored config: host and port are re-read from it and the last check result is reset.
+
+  | syn_mode  | string  | Fingerprint mode: profile_based, win, mac, android or real.
+
+  | vpn_protocol  | string  | wireguard
+
+  | external_id  | string  | Up to 255 characters.
 
 **Headers**
 
 - `Content-Type`: `application/json`
-- `X-Octo-Api-Token`: ``
 
 **Body**
 
@@ -2510,19 +2869,1403 @@ _request:_
 }
 ```
 
+**Response 200 — Update VPN Proxy**
+
+_request:_
+```json
+{
+  "conf": "W0ludGVyZmFjZV0KIyBUaGUgaW50ZXJuYWwgSVAgYWRkcmVzcyBhc3NpZ25lZCB0byB0aGlzIHNwZWNpZmljIGNsaWVudApBZGRyZXNzID0gMTAuMC4wLjIvMjQsIGZkYzk6MjgxZjowNGQ3OjllZTk6OjIvNjQKIyBUaGUgY2xpZW50J3MgdW5pcXVlIHByaXZhdGUga2V5ClByaXZhdGVLZXkgPSA8Q0xJRU5UXzFfUFJJVkFURV9LRVk+CiMgT3B0aW9uYWw6IFRoZSBETlMgc2VydmVyIHRoZSBjbGllbnQgc2hvdWxkIHVzZSB3aGlsZSBjb25uZWN0ZWQKRE5TID0gMS4xLjEuMSwgOC41LjUuNQoKW1BlZXJdCiMgVGhlIHB1YmxpYyBrZXkgb2YgdGhlIFdpcmVHdWFyZCBzZXJ2ZXIKUHVibGljS2V5ID0gPFNFUlZFUl9QVUJMSUNfS0VZPgojIFRoZSBwdWJsaWMgSVAgYWRkcmVzcyBvciBkb21haW4gbmFtZSBhbmQgcG9ydCBvZiB0aGUgc2VydmVyCkVuZHBvaW50ID0gaHR0cDovL3lvdXJkb21haW4uY29tOjU2NzQ1CiMgVHJhZmZpYyB0byByb3V0ZSB0aHJvdWdoIHRoZSB0dW5uZWwuIAojIFVzZSAwLjAuMC4wLzAsIDo6LzAgdG8gcm91dGUgYWxsIGludGVybmV0IHRyYWZmaWMuIAojIFVzZSAxMC4wLjAuMC8yNCB0byBvbmx5IHJvdXRlIHRyYWZmaWMgZGVzdGluZWQgZm9yIHRoZSBWUE4gc3VibmV0LgpBbGxvd2VkSVBzID0gMC4wLjAuMC8wLCA6Oi8wCiMgT3B0aW9uYWw6IFNlbmRzIGEgcGFja2V0IGV2ZXJ5IDI1IHNlY29uZHMgdG8ga2VlcCB0aGUgY29ubmVjdGlvbiBhbGl2ZSBiZWhpbmQgTkFUcwpQZXJzaXN0ZW50S2VlcGFsaXZlID0gMjU=",
+  "type": "vpn"
+}
+```
+
+```json
+{
+  "code": null,
+  "data": {
+    "change_ip_url": null,
+    "external_id": "my_custom_id=1",
+    "host": "http://yourdomain.com",
+    "login": "",
+    "password": "",
+    "port": 56745,
+    "syn_mode": "profile_based",
+    "type": "vpn",
+    "uuid": "23b512d979394d4097c5a6ddf04217b0",
+    "vpn_protocol": "wireguard"
+  },
+  "msg": "",
+  "success": true
+}
+```
+
+### 📁 Proxy providers
+
+Proxies from the proxy providers built into Octo Browser.
+
+Proxy kinds: data_center, mobile, residential. Traffic is counted in bytes per provider and is bought with tokens from the team balance.
+
+#### GET Get Proxy Providers
+
+`GET https://app.octobrowser.net/api/v2/automation/proxy_providers`
+
+Returns proxy providers available to the team.
+
+-
+kinds — proxy kinds the provider offers;
+
+-
+traffic — remaining team traffic for this provider, in bytes;
+
+-
+proxy_count — number of team proxies from this provider;
+
+-
+can_create_proxy, can_buy_traffic — whether these actions are currently available for the provider.
+
+**Response 200 — Get Proxy Providers**
+
+```json
+{
+  "data": [
+    {
+      "can_buy_traffic": true,
+      "can_create_proxy": true,
+      "kinds": [
+        "mobile",
+        "residential"
+      ],
+      "name": "Provider",
+      "proxy_count": 3,
+      "traffic": 5000000000,
+      "uuid": "9f1c2e7a4b3d4f6e8a1b2c3d4e5f6a7b"
+    }
+  ],
+  "msg": "",
+  "success": true
+}
+```
+
+#### GET Get Provider Proxies
+
+`GET https://app.octobrowser.net/api/v2/automation/proxy_providers/proxies`
+
+Returns team proxies created from proxy providers. Filter by provider and kind if needed.
+
+Paginated with page and page_len, the response contains total_count and page.
+
+**Response 200 — Get Provider Proxies**
+
+```json
+{
+  "code": null,
+  "data": [
+    {
+      "change_ip_url": "https://proxy.example.com/change-ip?key=abc",
+      "external_id": null,
+      "geo": {
+        "city": "los_angeles",
+        "country": "US",
+        "isp": "verizon",
+        "region": "CA"
+      },
+      "host": "proxy.example.com",
+      "kind": "mobile",
+      "login": "some_login",
+      "password": "some_password",
+      "port": 29801,
+      "profiles_count": 0,
+      "provider": {
+        "name": "Provider",
+        "uuid": "9f1c2e7a4b3d4f6e8a1b2c3d4e5f6a7b"
+      },
+      "syn_mode": null,
+      "title": "US mobile 1",
+      "type": "socks5",
+      "uuid": "963d30cb2d7247c89da222c8a9dcab29",
+      "vpn_protocol": null
+    }
+  ],
+  "msg": "",
+  "page": 0,
+  "success": true,
+  "total_count": 1
+}
+```
+
+#### POST Create Provider Proxies
+
+`POST https://app.octobrowser.net/api/v2/automation/proxy_providers/proxies`
+
+Creates 1 to 100 proxies from a proxy provider.
+
+provider: Provider uuid from GET /proxy_providers.
+
+Required permission: Create paid proxies.
+
+Take country, region, city and isp codes from the location requests of this folder. region, city and isp are optional. isp applies to mobile proxies only.
+
+Returns 201 with the created proxies
+
+  | Status  | Code  | When
+
+  | 400  | proxy_providers.empty_balance  | No traffic left for this provider
+
+  | 400  | proxy_providers.invalid  | The provider does not offer this kind
+
+  | 400  | bad_request  | The provider is unavailable or the location is invalid (see msg)
+
+  | 403  | proxy.limit_reached  | The plan limit of provider proxies is reached
+
+**Body**
+
+```json
+{
+    "provider": "9f1c2e7a4b3d4f6e8a1b2c3d4e5f6a7b",
+    "kind": "mobile",
+    "country_code": "US",
+    "region_code": "CA",     //optional
+    "city_code": null,       //optional
+    "isp_code": null,        //optional
+    "quantity": 1
+}
+```
+
+**Response 201 — Create Provider Proxies**
+
+```json
+{
+  "data": [
+    {
+      "change_ip_url": "https://proxy.example.com/change-ip?key=abc",
+      "external_id": null,
+      "geo": {
+        "city": "los_angeles",
+        "country": "US",
+        "isp": "verizon",
+        "region": "CA"
+      },
+      "host": "proxy.example.com",
+      "kind": "mobile",
+      "login": "some_login",
+      "password": "some_password",
+      "port": 29801,
+      "profiles_count": 0,
+      "provider": {
+        "name": "Provider",
+        "uuid": "9f1c2e7a4b3d4f6e8a1b2c3d4e5f6a7b"
+      },
+      "syn_mode": null,
+      "title": "US mobile 1",
+      "type": "socks5",
+      "uuid": "963d30cb2d7247c89da222c8a9dcab29",
+      "vpn_protocol": null
+    }
+  ],
+  "msg": "",
+  "success": true
+}
+```
+
+**Response 400 — Create Provider Proxies Empty Balance**
+
+```json
+{
+  "code": "proxy_providers.empty_balance",
+  "data": "",
+  "msg": "Proxy provider traffic balance is empty",
+  "success": false
+}
+```
+
+#### PATCH Update Provider Proxy
+
+`PATCH https://app.octobrowser.net/api/v2/automation/proxy_providers/proxies/:proxy_uuid`
+
+Renames a provider proxy. Only title can be changed (1–255 characters).
+
+Required permission: Edit proxies.
+
+**Body**
+
+```json
+{
+  "title": "US mobile 1"
+}
+```
+
+**Response 200 — Update Provider Proxy**
+
+```json
+{
+  "data": {
+    "change_ip_url": "https://proxy.example.com/change-ip?key=abc",
+    "external_id": null,
+    "geo": {
+      "city": "los_angeles",
+      "country": "US",
+      "isp": "verizon",
+      "region": "CA"
+    },
+    "host": "proxy.example.com",
+    "kind": "mobile",
+    "login": "some_login",
+    "password": "some_password",
+    "port": 29801,
+    "profiles_count": 0,
+    "provider": {
+      "name": "Provider",
+      "uuid": "9f1c2e7a4b3d4f6e8a1b2c3d4e5f6a7b"
+    },
+    "syn_mode": null,
+    "title": "US mobile 1",
+    "type": "socks5",
+    "uuid": "963d30cb2d7247c89da222c8a9dcab29",
+    "vpn_protocol": null
+  },
+  "msg": "",
+  "success": true
+}
+```
+
+#### DELETE Delete Provider Proxy
+
+`DELETE https://app.octobrowser.net/api/v2/automation/proxy_providers/proxies/:proxy_uuid`
+
+Required permission: Delete proxies.
+
+**Response 200 — Delete Provider Proxy**
+
+```json
+{
+  "data": null,
+  "msg": "",
+  "success": true
+}
+```
+
+#### GET Get Countries
+
+`GET https://app.octobrowser.net/api/v2/automation/proxy_providers/:provider_uuid/:kind/countries`
+
+Returns countries where the provider offers proxies of the given kind. Use code in the next requests and in Create Provider Proxies.
+
+  | Status  | Code  | When
+
+  | 400  | proxy_providers.not_exists  | The provider is not available
+
+  | 400  | proxy_providers.invalid  | The provider does not offer this kind
+
+**Response 200 — Get Countries**
+
+```json
+{
+  "data": [
+    {
+      "code": "US",
+      "name": "United States"
+    },
+    {
+      "code": "DE",
+      "name": "Germany"
+    }
+  ],
+  "msg": "",
+  "success": true
+}
+```
+
+#### GET Get Mobile ISPs
+
+`GET https://app.octobrowser.net/api/v2/automation/proxy_providers/:provider_uuid/mobile/countries/:country_code/isps`
+
+Returns mobile carriers (ISPs) of the provider in the country.
+
+Use code as :isp in Get Mobile Regions and as isp in Create Provider Proxies. The ISP is optional: skip it to get a proxy from any carrier in the country.
+
+  | Status  | Code  | When
+
+  | 400  | proxy_providers.not_exists  | The provider is not available
+
+  | 400  | proxy_providers.invalid  | The provider does not offer mobile proxies
+
+  | 400  | bad_request  | The provider API returned an error, try again later
+
+**Response 200 — Get Mobile ISPs**
+
+```json
+{
+  "data": [
+    {
+      "code": "verizon",
+      "name": "Verizon"
+    },
+    {
+      "code": "t-mobile",
+      "name": "T-Mobile"
+    }
+  ],
+  "msg": "",
+  "success": true
+}
+```
+
+#### GET Get Mobile Regions
+
+`GET https://app.octobrowser.net/api/v2/automation/proxy_providers/:provider_uuid/mobile/countries/:country_code/isps/:isp_code/regions`
+
+Returns regions where the mobile carrier (ISP) of the provider is available in the country.
+
+Use code as :region in Get Mobile Cities and as region in Create Provider Proxies.
+
+  | Status  | Code  | When
+
+  | 400  | proxy_providers.not_exists  | The provider is not available
+
+  | 400  | proxy_providers.invalid  | The provider does not offer mobile proxies
+
+  | 400  | bad_request  | The provider API returned an error, try again later
+
+**Response 200 — Get Mobile Regions**
+
+```json
+{
+  "data": [
+    {
+      "code": "CA",
+      "name": "California"
+    },
+    {
+      "code": "NY",
+      "name": "New York"
+    }
+  ],
+  "msg": "",
+  "success": true
+}
+```
+
+#### GET Get Mobile Cities
+
+`GET https://app.octobrowser.net/api/v2/automation/proxy_providers/:provider_uuid/mobile/countries/:country_code/isps/:isp_code/regions/:region_code/cities`
+
+Returns cities where the mobile carrier (ISP) of the provider is available in the region.
+
+Use code as city in Create Provider Proxies.
+
+  | Status  | Code  | When
+
+  | 400  | proxy_providers.not_exists  | The provider is not available
+
+  | 400  | proxy_providers.invalid  | The provider does not offer mobile proxies
+
+  | 400  | bad_request  | The provider API returned an error, try again later
+
+**Response 200 — Get Mobile Cities**
+
+```json
+{
+  "data": [
+    {
+      "code": "los_angeles",
+      "name": "Los Angeles"
+    },
+    {
+      "code": "san_francisco",
+      "name": "San Francisco"
+    }
+  ],
+  "msg": "",
+  "success": true
+}
+```
+
+#### GET Get Residential Regions
+
+`GET https://app.octobrowser.net/api/v2/automation/proxy_providers/:provider_uuid/residential/countries/:country_code/regions`
+
+Returns regions where the provider offers residential proxies in the country.
+
+Use code as :region in Get Residential Cities and as region in Create Provider Proxies. Residential proxies have no ISP level.
+
+  | Status  | Code  | When
+
+  | 400  | proxy_providers.not_exists  | The provider is not available
+
+  | 400  | proxy_providers.invalid  | The provider does not offer residential proxies
+
+  | 400  | bad_request  | The provider API returned an error, try again later
+
+**Response 200 — Get Residential Regions**
+
+```json
+{
+  "data": [
+    {
+      "code": "BY",
+      "name": "Bavaria"
+    },
+    {
+      "code": "BE",
+      "name": "Berlin"
+    }
+  ],
+  "msg": "",
+  "success": true
+}
+```
+
+#### GET Get Residential Cities
+
+`GET https://app.octobrowser.net/api/v2/automation/proxy_providers/:provider_uuid/residential/countries/:country_code/regions/:region_code/cities`
+
+Returns cities where the provider offers residential proxies in the region.
+
+Use code as city in Create Provider Proxies.
+
+  | Status  | Code  | When
+
+  | 400  | proxy_providers.not_exists  | The provider is not available
+
+  | 400  | proxy_providers.invalid  | The provider does not offer residential proxies
+
+  | 400  | bad_request  | The provider API returned an error, try again later
+
+**Response 200 — Get Residential Cities**
+
+```json
+{
+  "data": [
+    {
+      "code": "munich",
+      "name": "Munich"
+    },
+    {
+      "code": "nuremberg",
+      "name": "Nuremberg"
+    }
+  ],
+  "msg": "",
+  "success": true
+}
+```
+
+### 📁 Teams
+
+#### GET Get Extensions
+
+`GET https://app.octobrowser.net/api/v2/automation/teams/extensions?start=0&limit=25`
+
+Returns extensions used by a team installed in any profile.
+
+**Response 200 — Get Extensions**
+
+```json
+{
+  "data": [
+    {
+      "name": "Google Translate",
+      "uuid": "54d6ff5042c545b990349a7a7e653e81@2.0.12",
+      "version": "2.0.12"
+    }
+  ],
+  "msg": "",
+  "success": true
+}
+```
+
+#### DELETE Delete Extensions
+
+`DELETE https://app.octobrowser.net/api/v2/automation/teams/extensions`
+
+Required permission: Delete extensions.
+
+Deletes extensions of a team using UUIDs. The maximum UUID batch length is 100.
+
+IMPORTANT: If any profile is running during this request, the deleted extensions will continue to be available and functioning for this profile. After such a profile stops, these extensions will return to the extensions list. Please make sure that extensions you would like to delete are not in use in any running profile at the time of deletion.
+
+200 does not mean extensions were deleted: unknown ones are ignored.
+
+The request has a JSON body. Make sure your HTTP client sends a body with DELETE requests.
+
+**Headers**
+
+- `Content-Type`: `application/json`
+
+**Body**
+
+```json
+{
+  "uuids": [
+    "ppdakpfeaodfo@9.0.19"
+  ]
+}
+```
+
+**Response 200 — Delete Extensions**
+
+```json
+{
+  "data": "",
+  "msg": "Extensions deleted successfully",
+  "success": true
+}
+```
+
+#### GET Get subaccounts
+
+`GET https://app.octobrowser.net/api/v2/automation/teams/subaccounts`
+
+Required permission: Manage team.
+
+**Response 200 — Get subaccounts**
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2023-11-27 13:07:28",
+      "email": "test@octo.com",
+      "master": false,
+      "permissions": {
+        "edit_folders": true,
+        "edit_tags": false,
+        "extensions": {
+          "delete": false
+        },
+        "manage_action_log": false,
+        "manage_team": false,
+        "paid_proxies": {
+          "create": false
+        },
+        "profiles": {
+          "clone": false,
+          "create": false,
+          "delete": false,
+          "edit": false,
+          "passwords": false,
+          "transfer": false
+        },
+        "proxies": {
+          "create": false,
+          "delete": false,
+          "edit": false
+        },
+        "tasks": {
+          "manage": false,
+          "view": false
+        },
+        "templates": {
+          "create": false,
+          "delete": false,
+          "edit": false
+        },
+        "view_all_folders": true,
+        "view_all_tags": false,
+        "view_profiles_wo_folders": true,
+        "visible_folders": [],
+        "visible_tags": [
+          "tag_name"
+        ]
+      },
+      "uuid": "54d6ff5042c545b990349a7a7e653e81"
+    }
+  ],
+  "msg": "",
+  "success": true,
+  "total_count": 1
+}
+```
+
+#### GET Get invites
+
+`GET https://app.octobrowser.net/api/v2/automation/teams/invites`
+
+Required permission: Manage team.
+
+**Response 200 — Get invites**
+
+```json
+{
+  "data": [
+    {
+      "created_at": "2023-11-27 13:07:28",
+      "receiver": "test_receiver@octo.net"
+    }
+  ],
+  "msg": "",
+  "success": true,
+  "total_count": 1
+}
+```
+
+#### DELETE Delete invite
+
+`DELETE https://app.octobrowser.net/api/v2/automation/teams/invites`
+
+Required permission: Manage team.
+
+The request has a JSON body. Make sure your HTTP client sends a body with DELETE requests.
+
+**Body**
+
+```json
+{
+  "receiver": "test@octo.net"
+}
+```
+
+**Response 200 — Delete invite**
+
+```json
+{
+  "data": "",
+  "msg": "Invite deleted",
+  "success": true
+}
+```
+
+#### POST Invite subaccount
+
+`POST https://app.octobrowser.net/api/v2/automation/teams/subaccounts`
+
+Required permission: Manage team.
+
+IMPORTANT: If a permission is not specified, it will be set as false.
+
+**Headers**
+
+- `Content-Type`: `application/json`
+
+**Body**
+
+```json
+{
+    "email": "test@octo.net",
+    "permissions": {
+        "manage_team": false, // [optional]
+        "edit_tags": false, // [optional]
+        "view_all_tags": false, // [optional]
+        "edit_folders": false, // [optional]
+        "view_all_folders": true, // [optional]
+        "manage_action_log": false, // [optional]
+        "proxies": { // [optional]
+            "create": false,
+            "edit": false,
+            "delete": false
+        },
+        "paid_proxies": { // [optional]
+            "create": false
+        },
+        "profiles": { // [optional]
+            "transfer": false,
+            "clone": false,
+            "create": false,
+            "edit": false,
+            "delete": false,
+            "passwords": false
+        },
+        "templates": { // [optional]
+            "create": false,
+            "edit": false,
+            "delete": false
+        },
+        "extensions": { // [optional]
+            "delete": false
+        },
+        "tasks": { // [optional]
+            "view": false,
+            "manage": false
+        },
+        "visible_tags": ["tag_name"], // [optional]
+        "visible_folders": [], // [optional]
+        "view_profiles_wo_folders": true // [optional]
+    }
+}
+```
+
+**Response 200 — Invite subaccount**
+
+```json
+{
+  "data": "",
+  "msg": "Invite sent",
+  "success": true
+}
+```
+
+#### PATCH Update subaccount
+
+`PATCH https://app.octobrowser.net/api/v2/automation/teams/subaccounts`
+
+Required permission: Manage team.
+
+**Headers**
+
+- `Content-Type`: `application/json`
+
+**Body**
+
+```json
+{
+    "email": "test@octo.net",
+    "permissions": {
+        "manage_team": false, // [optional]
+        "edit_tags": false, // [optional]
+        "view_all_tags": false, // [optional]
+        "manage_action_log": false, // [optional]
+        "proxies": { // [optional]
+            "create": false,
+            "edit": false,
+            "delete": false
+        },
+        "paid_proxies": { // [optional]
+            "create": false
+        },
+        "profiles": { // [optional]
+            "transfer": false,
+            "clone": false,
+            "create": false,
+            "edit": false,
+            "delete": false,
+            "passwords": false
+        },
+        "templates": { // [optional]
+            "create": false,
+            "edit": false,
+            "delete": false
+        },
+        "extensions": { // [optional]
+            "delete": false
+        },
+        "tasks": { // [optional]
+            "view": false,
+            "manage": false
+        },
+        "visible_tags": ["tag_name"] // [optional]
+    }
+}
+```
+
+**Response 200 — Update subaccount**
+
+_request:_
+```json
+{
+    "email": "test@octo.net",
+    "permissions": {
+        "manage_team": false, // [optional]
+        "edit_tags": false, // [optional]
+        "view_all_tags": false, // [optional]
+        "edit_folders": false, // [optional]
+        "view_all_folders": true, // [optional]
+        "manage_action_log": false, // [optional]
+        "proxies": { // [optional]
+            "create": false,
+            "edit": false,
+            "delete": false
+        },
+        "paid_proxies": { // [optional]
+            "create": false
+        },
+        "profiles": { // [optional]
+            "transfer": false,
+            "clone": false,
+            "create": false,
+            "edit": false,
+            "delete": false,
+            "passwords": false
+        },
+        "templates": { // [optional]
+            "create": false,
+            "edit": false,
+            "delete": false
+        },
+        "extensions": { // [optional]
+            "delete": false
+        },
+        "tasks": { // [optional]
+            "view": false,
+            "manage": false
+        },
+        "visible_tags": ["tag_name"], // [optional]
+        "visible_folders": [], // [optional]
+        "view_profiles_wo_folders": true // [optional]
+    }
+}
+```
+
+```json
+{
+  "data": {
+    "uuid": "d2874db6b3344506946c1bb91bd17bf8"
+  },
+  "msg": "Team member updated",
+  "success": true
+}
+```
+
+#### DELETE Delete subaccount
+
+`DELETE https://app.octobrowser.net/api/v2/automation/teams/subaccounts`
+
+Required permission: Manage team.
+
+The request has a JSON body. Make sure your HTTP client sends a body with DELETE requests.
+
+**Headers**
+
+- `Content-Type`: `application/json`
+
+**Body**
+
+```json
+{
+  "email": "test@octo.net"
+}
+```
+
+**Response 200 — Delete subaccount**
+
+```json
+{
+  "data": "",
+  "msg": "Team member deleted",
+  "success": true
+}
+```
+
+#### GET Get Subscription
+
+`GET https://app.octobrowser.net/api/v2/automation/teams/subscription`
+
+Returns the team subscription, balance, usage of the plan limits and the current API rate limits.
+
+-
+plan — plan name;
+
+-
+expiration — subscription end date;
+
+-
+balance — team balance in tokens;
+
+-
+profiles, team_members, api_tokens — used and limit of the plan (team_members does not count the account owner);
+
+-
+rate_limits.rpm, rate_limits.rph — requests per minute and per hour: limit, remaining (this request included) and reset_at (UTC), the time when a request slot becomes free again.
+
+**Response 200 — Get Subscription**
+
+```json
+{
+  "data": {
+    "api_tokens": {
+      "limit": 3,
+      "used": 2
+    },
+    "auto_renew": true,
+    "balance": "125.5",
+    "expiration": "2026-11-27T00:00:00",
+    "plan": "team",
+    "profiles": {
+      "limit": 500,
+      "used": 120
+    },
+    "rate_limits": {
+      "rph": {
+        "limit": 1500,
+        "remaining": 1460,
+        "reset_at": "2026-10-27T12:35:00"
+      },
+      "rpm": {
+        "limit": 100,
+        "remaining": 98,
+        "reset_at": "2026-10-27T12:01:00"
+      }
+    },
+    "team_members": {
+      "limit": 5,
+      "used": 2
+    }
+  },
+  "msg": "",
+  "success": true
+}
+```
+
+### 📁 Fingerprint
+
+#### GET Get Renderers
+
+`GET https://app.octobrowser.net/api/v2/automation/fingerprint/renderers?page_len=100&page=0&os=win&os_arch=x86`
+
+**Response 200 — Get Renderers**
+
+```json
+{
+  "data": [
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "win",
+      "value": "ATI Radeon HD 3200 Graphics (Microsoft Corporation WDDM 1.1)"
+    },
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "win",
+      "value": "ATI Radeon 3100 Graphics (Microsoft Corporation WDDM 1.1)"
+    },
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "win",
+      "value": "NVIDIA GeForce GTX 660"
+    },
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "win",
+      "value": "ATI Radeon HD 3400 Series"
+    },
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "win",
+      "value": "NVIDIA GeForce 210"
+    },
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "win",
+      "value": "AMD Radeon HD 6800 Series"
+    },
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "lin",
+      "value": "NVIDIA Tegra K1 (nvgpu)/integrated"
+    },
+    {
+      "archs": [
+        "arm"
+      ],
+      "platform": "mac",
+      "value": "Apple M2 Pro"
+    }
+  ],
+  "msg": "",
+  "page": 0,
+  "success": true,
+  "total_count": 250
+}
+```
+
+#### GET Get Screens
+
+`GET https://app.octobrowser.net/api/v2/automation/fingerprint/screens?os=win&os_arch=x86`
+
+**Response 200 — Get Screens**
+
+```json
+{
+  "data": [
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "win",
+      "value": "1440x900"
+    },
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "win",
+      "value": "1536x864"
+    },
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "win",
+      "value": "1536x960"
+    },
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "win",
+      "value": "1600x900"
+    },
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "win",
+      "value": "1680x1050"
+    },
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "win",
+      "value": "1920x1080"
+    },
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "win",
+      "value": "1920x1200"
+    },
+    {
+      "archs": [
+        "x86"
+      ],
+      "platform": "win",
+      "value": "2560x1440 (2K)"
+    }
+  ],
+  "msg": "",
+  "success": true
+}
+```
+
+#### GET Get Mobile Device Models
+
+`GET https://app.octobrowser.net/api/v2/automation/fingerprint/device_models?device_type=phone`
+
+**Response 200 — Get Mobile Device Models**
+
+```json
+{
+  "data": [
+    {
+      "archs": [
+        "arm"
+      ],
+      "device_type": "phone",
+      "os": "android",
+      "os_versions": [
+        "12"
+      ],
+      "value": "M2102J20SG"
+    },
+    {
+      "archs": [
+        "arm"
+      ],
+      "device_type": "tablet",
+      "os": "android",
+      "os_versions": [
+        "13"
+      ],
+      "value": "21051182G"
+    },
+    {
+      "archs": [
+        "arm"
+      ],
+      "device_type": "tablet",
+      "os": "android",
+      "os_versions": [
+        "13"
+      ],
+      "value": "SM-T970"
+    },
+    {
+      "archs": [
+        "arm"
+      ],
+      "device_type": "phone",
+      "os": "android",
+      "os_versions": [
+        "12"
+      ],
+      "value": "M2007J20CG"
+    },
+    {
+      "archs": [
+        "arm"
+      ],
+      "device_type": "phone",
+      "os": "android",
+      "os_versions": [
+        "13"
+      ],
+      "value": "SM-M526B"
+    },
+    {
+      "archs": [
+        "arm"
+      ],
+      "device_type": "phone",
+      "os": "android",
+      "os_versions": [
+        "13"
+      ],
+      "value": "moto g32"
+    }
+  ],
+  "msg": "",
+  "success": true
+}
+```
+
+#### GET Get Platforms
+
+`GET https://app.octobrowser.net/api/v2/automation/fingerprint/platforms`
+
+Returns supported operating systems, their architectures and OS versions. Use these values for os, os_arch and os_version in the profile fingerprint.
+
+**Response 200 — Get Platforms**
+
+```json
+{
+  "code": null,
+  "data": [
+    {
+      "archs": [
+        {
+          "arch": "x86",
+          "os_versions": [
+            "10",
+            "11"
+          ]
+        }
+      ],
+      "os": "win"
+    },
+    {
+      "archs": [
+        {
+          "arch": "x86",
+          "os_versions": [
+            "13",
+            "14",
+            "15",
+            "26"
+          ]
+        },
+        {
+          "arch": "arm",
+          "os_versions": [
+            "13",
+            "14",
+            "15",
+            "26"
+          ]
+        }
+      ],
+      "os": "mac"
+    },
+    {
+      "archs": [
+        {
+          "arch": "arm",
+          "os_versions": [
+            "12",
+            "13",
+            "14",
+            "15"
+          ]
+        }
+      ],
+      "os": "android"
+    }
+  ],
+  "msg": "",
+  "success": true
+}
+```
+
+### 📁 Action Log
+
+Action log stream
+
+Endpoint
+
+-
+Type: WebSocket
+
+-
+URL: wss://app.octobrowser.net//api/v2/automation/ws/action_log
+
+-
+Authentication: Auto API Token (header X-Octo-Api-Token)
+
+-
+Required permission: Action log. Without it, the connection is rejected with 403 (no_permission).
+
+Response Format
+
+Each WebSocket message contains a StreamPage:
+
+{
+"items": [
+    {
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "action": "profiles.started",
+    "time": 1707053400,
+    "user_email": "user@example.com",
+    "object_type": "profile",
+    "object_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "object_title": "Octo Browser Profile",
+    "data": {
+        "connection_data": {
+            "ip": "203.0.113.42",
+            "countryCode": "FR",
+            "countryName": "France",
+            "subdivisions": [
+                "Île-de-France",
+                "Paris"
+            ],
+            "postalCode": "75008",
+            "cityName": "Paris",
+            "timezone": "Europe/Paris",
+            "lat": 48.8566,
+            "lon": 2.3522,
+            "languages": [
+                "fr",
+                "en-US",
+                "en"
+            ],
+            "isp": "Example Networks Ltd",
+            "connectionType": "Cable/DSL"
+        }
+    }
+    }
+  ],
+  "watermark": {
+      "uuid": "550e8400-e29b-41d4-a716-446655440000",
+      "time": 1707053400
+  }
+}
+
+Actions made with API tokens
+
+For actions made with an API token, user_email is (API), for example Scraper (API). Actions made with the token from earlier versions show API token (API).
+
+Earlier versions showed the email of the account owner instead.
+
+Examples
+
+Initial Connection
+
+wss://app.octobrowser.net/api/v2/automation/ws/action_log
+
+Reconnect After Disconnect
+
+Use the watermark UUID to resume:
+
+wss://app.octobrowser.net/api/v2/automation/ws/action_log?after_uuid=abc-123
+
+Start From Specific Time
+
+wss://app.octobrowser.net/api/v2/automation/ws/action_log?from_timestamp=1707053400
+
+Event Types (Actions)
+
+-
+profiles.started - Profile browser was started
+
+-
+profiles.stopped - Profile browser was stopped
+
+-
+profiles.force_stopped - Profile browser was force stopped
+
+-
+profiles.transferred - Profile was transferred
+
+-
+profiles.trashed- Profile was moved to trash bin
+
+-
+profiles.created - Profile was created
+
+-
+profiles.updated - Profile was updated
+
+-
+profiles.deleted - Profile was deleted
+
+-
+profiles.proxy_assigned - Proxy was assigned to profile
+
+-
+profiles.proxy_unassigned - Proxy was unassigned from profile
+
+-
+profiles.proxy_changed - Profile's proxy was changed to another one
+
+Query Parameters
+
+-
+after_uuid (string, UUID, optional) - UUID of the last received audit entry. Use this to resume streaming from a specific point.
+
+-
+from_timestamp (integer, Unix timestamp, optional) - Start streaming from this timestamp. Events are only available for 24 hours.
+
+How It Works
+
+-
+Connect to the WebSocket endpoint
+
+-
+Receive pages of events as JSON messages
+
+-
+Use the watermark from each response to track your position in the stream and use these values ​​in case of reconnection
+
+Watermark Mechanics
+
+The watermark acts as a cursor for pagination:
+
+-
+Contains uuid and time of the last record
+
+-
+Ensures stable pagination even when multiple records share the same timestamp
+
+-
+Use after_uuid parameter on reconnect to resume from where you left off
+
+-
+Use the from_time parameter when reconnecting to continue from a specific time
+
+Constraints
+
+-
+Event retention: 24 hours
+
+-
+Batch size: Up to 100 records per page
+
+-
+Requirements: Team must have API option in subscription
 
 ## 📁 Local client API
 
 This is a local client API to run profiles.
- 
-The default server port is 58888.
- 
-The API URL is http://localhost:58888.
 
+The default server port is 58888.
+
+The API URL is http://localhost:58888.
 
 ### GET List Active Profiles
 
-`GET /api/profiles/active`
+`GET http://localhost:58888/api/profiles/active`
 
 Shows the list of profiles launched on your device. webSocketDebuggerUrl will be shown only for profiles that are launched in the headless mode.
 
@@ -2543,31 +4286,30 @@ Shows the list of profiles launched on your device. webSocketDebuggerUrl will be
 ]
 ```
 
-
 ### POST Start Profile
 
-`POST /api/profiles/start`
+`POST http://localhost:58888/api/profiles/start`
 
 debug_port=true enables the automation port. A random free port will be selected.
- 
+
 debug_port=20000 launches the browser on a specific port. Allowed values: 1024-65534.
- 
+
 timeout - seconds overrides the default start timeout value. This is usually required if you are using slow proxies.
- 
+
 flags - list[string] allows you to add additional Chromium flags. Note: we recommend against adding any flags and we don't guarantee correct browser work if you decide to do so. Use this only if you are certain that you absolutely need this and you know precisely what you are doing.
- 
+
 profile_data - mapping allows to override some profile fields during start (images_load_limit: null, size in bytes)
- 
+
 --disk-cache-dir allows you to change the default cache folder. If you want to save your cached data (images, scripts, etc.), you can add this flag and add a path to the desired folder. The path should be outside the profile folder. By default the cache is cleared every time you close the profile.
 
 example: flags:["--disk-cache-dir=C:/Cache"]
- 
+
 --disable-backgrounding-occluded-windows can be useful if you automate many profiles at the same time and your scripts do not work correctly in windows that are out of focus (running in the background).
- 
+
 To listen to, e.g., 0.0.0.0 interface you can add "flags": ["--remote-debugging-address=0.0.0.0"]
- 
+
 chromedrivers allows you to download official chromedrivers.
- 
+
 START_ERROR_CODES = {
     ComponentNotFoundException: 1,
     ProfileAlreadyRunningException: 2,
@@ -2595,29 +4337,6 @@ START_ERROR_CODES = {
     "flags": [],
     "timeout": 120,
     "password": "password" // [optional]
-}
-```
-
-**Response  — Start Profile Already Running On Different Machine**
-
-_request:_
-```json
-{
-  "debug_port": true,
-  "flags": [],
-  "headless": false,
-  "only_local": true,
-  "password": "password",
-  "timeout": 120,
-  "uuid": ""
-}
-```
-
-```json
-{
-  "code": "profiles.already_started",
-  "error": "Profile is already started",
-  "error_code": 2
 }
 ```
 
@@ -2685,6 +4404,29 @@ _request:_
 }
 ```
 
+**Response 400 — Start Profile Already Running On Different Machine**
+
+_request:_
+```json
+{
+  "debug_port": true,
+  "flags": [],
+  "headless": false,
+  "only_local": true,
+  "password": "password",
+  "timeout": 120,
+  "uuid": ""
+}
+```
+
+```json
+{
+  "code": "profiles.already_started",
+  "error": "Profile is already started",
+  "error_code": 2
+}
+```
+
 **Response 400 — Start Profile Proxy Error**
 
 _request:_
@@ -2708,10 +4450,9 @@ _request:_
 }
 ```
 
-
 ### POST Stop Profile
 
-`POST /api/profiles/stop`
+`POST http://localhost:58888/api/profiles/stop`
 
 **Headers**
 
@@ -2733,10 +4474,9 @@ _request:_
 }
 ```
 
-
 ### POST Force Stop Profile
 
-`POST /api/profiles/force_stop`
+`POST http://localhost:58888/api/profiles/force_stop`
 
 Requires Octo Browser 1.7 or later
 
@@ -2752,7 +4492,7 @@ Requires Octo Browser 1.7 or later
 }
 ```
 
-**Response  — Force Stop Profile**
+**Response 200 — Force Stop Profile**
 
 ```json
 {
@@ -2760,12 +4500,13 @@ Requires Octo Browser 1.7 or later
 }
 ```
 
-
 ### POST Login
 
-`POST /api/auth/login`
+`POST http://localhost:58888/api/auth/login`
 
 Requires Octo Browser 1.8.0 or later
+
+If the client was started with OCTO_API_TOKEN, login and logout are disabled and the request returns 400 with the code auth.managed_by_api_token.
 
 **Headers**
 
@@ -2775,13 +4516,21 @@ Requires Octo Browser 1.8.0 or later
 
 ```json
 {
-    "email": "useremail@domain.net",
-    "password": "userpassword",
-    "api_token": "api_token" // [optional] 
+  "email": "useremail@domain.net",
+  "password": "userpassword"
 }
 ```
 
 **Response 200 — Login**
+
+_request:_
+```json
+{
+    "email": "useremail@domain.net",
+    "password": "userpassword",
+    "api_token": "api_token" // [optional]
+}
+```
 
 ```json
 {
@@ -2789,14 +4538,15 @@ Requires Octo Browser 1.8.0 or later
 }
 ```
 
-
 ### POST Logout
 
-`POST /api/auth/logout`
+`POST http://localhost:58888/api/auth/logout`
 
 Requires Octo Browser 1.8.0 or later
 
-**Response  — Logout**
+If the client was started with OCTO_API_TOKEN, login and logout are disabled and the request returns 400 with the code auth.managed_by_api_token.
+
+**Response 200 — Logout**
 
 ```json
 {
@@ -2804,10 +4554,9 @@ Requires Octo Browser 1.8.0 or later
 }
 ```
 
-
 ### GET Get Client Version
 
-`GET /api/update`
+`GET http://localhost:58888/api/update`
 
 Shows the current and latest available browser versions. Update_required field indicates a critical update availability. A critical update means that the current browser version is no longer supported and an update is strongly recommended.
 
@@ -2831,10 +4580,9 @@ Shows the current and latest available browser versions. Update_required field i
 }
 ```
 
-
 ### POST Update Client
 
-`POST /api/update`
+`POST http://localhost:58888/api/update`
 
 Triggers an update to the latest available version. If the browser is up to date this will return an error.
 
@@ -2855,21 +4603,19 @@ Triggers an update to the latest available version. If the browser is up to date
 }
 ```
 
-
 ### GET Username
 
-`GET /api/username`
+`GET http://localhost:58888/api/username`
 
 Returns the current user username.
 
-**Response  — Username**
+**Response 200 — Username**
 
 ```json
 {
   "username": "user@example.com"
 }
 ```
-
 
 ### POST One-time profile
 
@@ -2954,7 +4700,7 @@ Note: if you don't specify a given parameter, we will generate the best values f
 }
 ```
 
-**Response  — Start One-time Profile**
+**Response 200 — Start One-time Profile**
 
 ```json
 {
@@ -2972,7 +4718,6 @@ Note: if you don't specify a given parameter, we will generate the best values f
   "ws_endpoint": "ws://127.0.0.1:63269/devtools/browser/f7aa4e97-c300-404f-b9c7-2633db0c1515"
 }
 ```
-
 
 ### POST Set profile password
 
@@ -3013,12 +4758,13 @@ Minimal length - at least 4 characters
 }
 ```
 
-
 ### DELETE Delete profile password
 
 `DELETE http://localhost:58888/api/profiles/password`
 
 Unsets password of profile
+
+The request has a JSON body. Make sure your HTTP client sends a body with DELETE requests.
 
 **Headers**
 
@@ -3069,16 +4815,142 @@ Unsets password of profile
 }
 ```
 
+### POST Check Proxy
+
+`POST http://localhost:58888/api/proxies/check`
+
+The body is one of:
+
+-
+a saved proxy: uuid from Get Proxies;
+
+-
+proxy data: type (socks5, http, https or ssh), host, port, login, password;
+
+-
+a VPN config, in the same format as in Create Proxy: type = vpn, conf — the WireGuard/AmneziaWG config file encoded in base64, vpn_protocol — wireguard.
+
+  | Status  | Code  | When
+
+  | 400  | proxies.proxy_connection_error  | The proxy is unreachable or rejected the connection. error contains the reason
+
+  | 401  | auth.unauthenticated  | The client is not logged in
+
+**Body**
+
+```json
+{
+  "host": "188.188.188.88",
+  "login": "user",
+  "password": "pass",
+  "port": 1080,
+  "type": "socks5"
+}
+```
+
+**Response 200 — Check Proxy**
+
+```json
+{
+  "data": {
+    "city_name": "Frankfurt am Main",
+    "connection_type": "Corporate",
+    "country": "DE",
+    "country_full_name": "Germany",
+    "isp": "Example ISP",
+    "mtu": 1500,
+    "os": "Linux",
+    "postal_code": "60313",
+    "real_ip": "188.188.188.88",
+    "subdivisions": [
+      "Hesse"
+    ],
+    "supports_udp": true,
+    "timezone": "Europe/Berlin"
+  }
+}
+```
+
+**Response 200 — Check Saved Proxy**
+
+_request:_
+```json
+{
+  "uuid": "a1b2c3d4e5f64789a0b1c2d3e4f5a6b7"
+}
+```
+
+```json
+{
+  "data": {
+    "city_name": "Frankfurt am Main",
+    "connection_type": "Corporate",
+    "country": "DE",
+    "country_full_name": "Germany",
+    "isp": "Example ISP",
+    "mtu": 1500,
+    "os": "Linux",
+    "postal_code": "60313",
+    "real_ip": "188.188.188.88",
+    "subdivisions": [
+      "Hesse"
+    ],
+    "supports_udp": true,
+    "timezone": "Europe/Berlin"
+  }
+}
+```
+
+**Response 200 — Check VPN**
+
+_request:_
+```json
+{
+  "conf": "W0ludGVyZmFjZV0KUHJpdmF0ZUtleSA9IC4uLgo=",
+  "type": "vpn",
+  "vpn_protocol": "wireguard"
+}
+```
+
+```json
+{
+  "data": {
+    "city_name": "Frankfurt am Main",
+    "connection_type": "Corporate",
+    "country": "DE",
+    "country_full_name": "Germany",
+    "isp": "Example ISP",
+    "mtu": 1500,
+    "os": "Linux",
+    "postal_code": "60313",
+    "real_ip": "188.188.188.88",
+    "subdivisions": [
+      "Hesse"
+    ],
+    "supports_udp": true,
+    "timezone": "Europe/Berlin"
+  }
+}
+```
+
+**Response 400 — Check Proxy Connection Error**
+
+```json
+{
+  "code": "proxies.proxy_connection_error",
+  "error": "Connection refused",
+  "error_code": -1
+}
+```
 
 ## 📁 Automation Libraries
 
 Examples of connecting automation libraries to a running profile, in different programming languages.
 
-
 ### 📁 Puppeteer/Pyppeteer
 
 Connecting Puppeteer
- 
+
 const puppeteer = require('puppeteer');
 const axios = require('axios');
 const OCTO_REMOTE_API = axios.create({
@@ -3120,9 +4992,8 @@ async function startProfile(uuid) {
     await page.goto('https://google.com/');
 })();
 
- 
 Pyppeteer (python version)
- 
+
 import asyncio
 import logging
 import os
@@ -3160,11 +5031,10 @@ async def main():
 if __name__ == '__main__':
     asyncio.run(main())
 
-
 ### 📁 Playwright
 
 Connecting Playwright
- 
+
 const axios = require('axios');
 const pw = require('playwright');
 const OCTO_REMOTE_API = axios.create({
@@ -3201,12 +5071,11 @@ async function startProfile(uuid) {
   const browser = await pw.chromium.connectOverCDP(ws_endpoint);
   const context = browser.contexts()[0];
   const page = context.pages()[0];
-  await page.goto('https://google.com'); 
+  await page.goto('https://google.com');
 })();
 
- 
 Playwright Sync Python
- 
+
 import httpx
 from playwright.sync_api import sync_playwright
 PROFILE_UUID = "UUID_OF_YOUR_PROFILE"
@@ -3231,9 +5100,8 @@ def main():
 if __name__ == '__main__':
     main()
 
- 
 Playwright Async Python
- 
+
 import httpx
 import asyncio
 from playwright.async_api import async_playwright
@@ -3261,15 +5129,14 @@ async def main():
 if __name__ == '__main__':
     asyncio.run(main())
 
-
 ### 📁 Selenium
 
 Connecting Selenium
- 
+
 NB: By default Selenium is exposed in the browser and can be detected by some sites. It should work fine for most cases; however, if it doesn't, you need to use another automation library (puppeteer, chrome dev protocol).
- 
+
 Alternatively, consider changing default Selenium to undetected-chromedriver.
- 
+
 import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -3297,7 +5164,6 @@ def main():
 if __name__ == '__main__':
     main()
 
- 
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -3345,9 +5211,8 @@ public class Main {
     }
 }
 
- 
 Visual Basic .NET Example
- 
+
 Imports System
 Imports System.Net.Http
 Imports System.Text
@@ -3391,794 +5256,57 @@ Public Class Main
 End Class
 End Module
 
-
-## 📁 Teams
-
-
-### GET Get Extensions
-
-`GET //api/v2/automation/teams/extensions?start=0&limit=25`
-
-Returns extensions used by a team installed in any profile.
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
-
-**Response 200 — Get Extensions**
-
-```json
-{
-  "data": [
-    {
-      "name": "Google Translate",
-      "uuid": "54d6ff5042c545b990349a7a7e653e81@2.0.12",
-      "version": "2.0.12"
-    }
-  ],
-  "msg": "",
-  "success": true
-}
-```
-
-
-### DELETE Delete Extensions
-
-`DELETE //api/v2/automation/teams/extensions`
-
-Deletes extensions of a team using UUIDs. The maximum UUID batch length is 100.
- 
-IMPORTANT: If any profile is running during this request, the deleted extensions will continue to be available and functioning for this profile. After such a profile stops, these extensions will return to the extensions list. Please make sure that extensions you would like to delete are not in use in any running profile at the time of deletion.
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
-- `Content-Type`: `application/json`
-
-**Body**
-
-```json
-{
-  "uuids": [
-    "ppdakpfeaodfo@9.0.19"
-  ]
-}
-```
-
-**Response 200 — Delete Extensions**
-
-```json
-{
-  "data": "",
-  "msg": "Extensions deleted successfully",
-  "success": true
-}
-```
-
-
-### GET Get subaccounts
-
-`GET //api/v2/automation/teams/subaccounts`
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
-
-**Response  — Get subaccounts**
-
-```json
-{
-  "data": [
-    {
-      "created_at": "2023-11-27 13:07:28",
-      "email": "test@octo.com",
-      "master": false,
-      "permissions": {
-        "edit_folders": true,
-        "edit_tags": false,
-        "extensions": {
-          "delete": false
-        },
-        "manage_action_log": false,
-        "manage_team": false,
-        "paid_proxies": {
-          "create": false
-        },
-        "profiles": {
-          "clone": false,
-          "create": false,
-          "delete": false,
-          "edit": false,
-          "passwords": false,
-          "transfer": false
-        },
-        "proxies": {
-          "create": false,
-          "delete": false,
-          "edit": false
-        },
-        "tasks": {
-          "manage": false,
-          "view": false
-        },
-        "templates": {
-          "create": false,
-          "delete": false,
-          "edit": false
-        },
-        "view_all_folders": true,
-        "view_all_tags": false,
-        "view_profiles_wo_folders": true,
-        "visible_folders": [],
-        "visible_tags": [
-          "tag_name"
-        ]
-      },
-      "uuid": "54d6ff5042c545b990349a7a7e653e81"
-    }
-  ],
-  "msg": "",
-  "success": true,
-  "total_count": 1
-}
-```
-
-
-### GET Get invites
-
-`GET //api/v2/automation/teams/invites`
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
-
-**Response  — Get invites**
-
-```json
-{
-  "data": [
-    {
-      "created_at": "2023-11-27 13:07:28",
-      "receiver": "test_receiver@octo.net"
-    }
-  ],
-  "msg": "",
-  "success": true,
-  "total_count": 1
-}
-```
-
-
-### DELETE Delete invite
-
-`DELETE //api/v2/automation/teams/invites`
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
-
-**Body**
-
-```json
-{
-  "receiver": "test@octo.net"
-}
-```
-
-**Response  — Delete invite**
-
-```json
-{
-  "data": "",
-  "msg": "Invite deleted",
-  "success": true
-}
-```
-
-
-### POST Create subaccount
-
-`POST //api/v2/automation/teams/subaccounts`
-
-IMPORTANT: If a permission is not specified, it will be set as false.
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
-- `Content-Type`: `application/json`
-
-**Body**
-
-```json
-{
-    "email": "test@octo.net",
-    "permissions": {
-        "manage_team": false, // [optional]
-        "edit_tags": false, // [optional]
-        "view_all_tags": false, // [optional]
-        "edit_folders": false, // [optional]
-        "view_all_folders": true, // [optional]
-        "manage_action_log": false, // [optional]
-        "proxies": { // [optional]
-            "create": false,
-            "edit": false,
-            "delete": false
-        },
-        "paid_proxies": { // [optional]
-            "create": false
-        },
-        "profiles": { // [optional]
-            "transfer": false,
-            "clone": false,
-            "create": false,
-            "edit": false,
-            "delete": false,
-            "passwords": false
-        },
-        "templates": { // [optional]
-            "create": false,
-            "edit": false,
-            "delete": false
-        },
-        "extensions": { // [optional]
-            "delete": false
-        },
-        "tasks": { // [optional]
-            "view": false,
-            "manage": false
-        },
-        "visible_tags": ["tag_name"], // [optional]
-        "visible_folders": [], // [optional]
-        "view_profiles_wo_folders": true // [optional]
-    }
-}
-```
-
-**Response  — Create subaccount**
-
-```json
-{
-  "data": "",
-  "msg": "Invite sent",
-  "success": true
-}
-```
-
-
-### PATCH Update subaccount
-
-`PATCH //api/v2/automation/teams/subaccounts`
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
-- `Content-Type`: `application/json`
-
-**Body**
-
-```json
-{
-    "email": "test@octo.net",
-    "permissions": {
-        "manage_team": false, // [optional]
-        "edit_tags": false, // [optional]
-        "view_all_tags": false, // [optional]
-        "manage_action_log": false, // [optional]
-        "proxies": { // [optional]
-            "create": false,
-            "edit": false,
-            "delete": false
-        },
-        "paid_proxies": { // [optional]
-            "create": false
-        },
-        "profiles": { // [optional]
-            "transfer": false,
-            "clone": false,
-            "create": false,
-            "edit": false,
-            "delete": false,
-            "passwords": false
-        },
-        "templates": { // [optional]
-            "create": false,
-            "edit": false,
-            "delete": false
-        },
-        "extensions": { // [optional]
-            "delete": false
-        },
-        "tasks": { // [optional]
-            "view": false,
-            "manage": false
-        },
-        "visible_tags": ["tag_name"] // [optional]
-    }
-}
-```
-
-**Response  — Update subaccount**
-
-_request:_
-```json
-{
-    "email": "test@octo.net",
-    "permissions": {
-        "manage_team": false, // [optional]
-        "edit_tags": false, // [optional]
-        "view_all_tags": false, // [optional]
-        "edit_folders": false, // [optional]
-        "view_all_folders": true, // [optional]
-        "manage_action_log": false, // [optional]
-        "proxies": { // [optional]
-            "create": false,
-            "edit": false,
-            "delete": false
-        },
-        "paid_proxies": { // [optional]
-            "create": false
-        },
-        "profiles": { // [optional]
-            "transfer": false,
-            "clone": false,
-            "create": false,
-            "edit": false,
-            "delete": false,
-            "passwords": false
-        },
-        "templates": { // [optional]
-            "create": false,
-            "edit": false,
-            "delete": false
-        },
-        "extensions": { // [optional]
-            "delete": false
-        },
-        "tasks": { // [optional]
-            "view": false,
-            "manage": false
-        },
-        "visible_tags": ["tag_name"], // [optional]
-        "visible_folders": [], // [optional]
-        "view_profiles_wo_folders": true // [optional]
-    }
-}
-```
-
-```json
-{
-  "data": {
-    "uuid": "d2874db6b3344506946c1bb91bd17bf8"
-  },
-  "msg": "Team member updated",
-  "success": true
-}
-```
-
-
-### DELETE Delete subaccount
-
-`DELETE //api/v2/automation/teams/subaccounts`
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
-- `Content-Type`: `application/json`
-
-**Body**
-
-```json
-{
-  "email": "test@octo.net"
-}
-```
-
-**Response  — Delete subaccount**
-
-```json
-{
-  "data": "",
-  "msg": "Team member deleted",
-  "success": true
-}
-```
-
-
-## 📁 Fingerprint
-
-
-### GET Get Renderers
-
-`GET //api/v2/automation/fingerprint/renderers?page_len=100&page=0&os=win&os_arch=x86`
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
-
-**Response 200 — Get Renderers**
-
-```json
-{
-  "data": [
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "win",
-      "value": "ATI Radeon HD 3200 Graphics (Microsoft Corporation WDDM 1.1)"
-    },
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "win",
-      "value": "ATI Radeon 3100 Graphics (Microsoft Corporation WDDM 1.1)"
-    },
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "win",
-      "value": "NVIDIA GeForce GTX 660"
-    },
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "win",
-      "value": "ATI Radeon HD 3400 Series"
-    },
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "win",
-      "value": "NVIDIA GeForce 210"
-    },
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "win",
-      "value": "AMD Radeon HD 6800 Series"
-    },
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "lin",
-      "value": "NVIDIA Tegra K1 (nvgpu)/integrated"
-    },
-    {
-      "archs": [
-        "arm"
-      ],
-      "platform": "mac",
-      "value": "Apple M2 Pro"
-    }
-  ],
-  "msg": "",
-  "page": 0,
-  "success": true,
-  "total_count": 250
-}
-```
-
-
-### GET Get Screens
-
-`GET //api/v2/automation/fingerprint/screens?os=win&os_arch=x86`
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
-
-**Response 200 — Get Screens**
-
-```json
-{
-  "data": [
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "win",
-      "value": "1440x900"
-    },
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "win",
-      "value": "1536x864"
-    },
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "win",
-      "value": "1536x960"
-    },
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "win",
-      "value": "1600x900"
-    },
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "win",
-      "value": "1680x1050"
-    },
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "win",
-      "value": "1920x1080"
-    },
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "win",
-      "value": "1920x1200"
-    },
-    {
-      "archs": [
-        "x86"
-      ],
-      "platform": "win",
-      "value": "2560x1440 (2K)"
-    }
-  ],
-  "msg": "",
-  "success": true
-}
-```
-
-
-### GET Get Mobile Device Models
-
-`GET //api/v2/automation/fingerprint/device_models?device_type=phone`
-
-**Headers**
-
-- `X-Octo-Api-Token`: ``
-
-**Response  — Get Mobile Device Models**
-
-```json
-{
-  "data": [
-    {
-      "archs": [
-        "arm"
-      ],
-      "device_type": "phone",
-      "os": "android",
-      "os_versions": [
-        "12"
-      ],
-      "value": "M2102J20SG"
-    },
-    {
-      "archs": [
-        "arm"
-      ],
-      "device_type": "tablet",
-      "os": "android",
-      "os_versions": [
-        "13"
-      ],
-      "value": "21051182G"
-    },
-    {
-      "archs": [
-        "arm"
-      ],
-      "device_type": "tablet",
-      "os": "android",
-      "os_versions": [
-        "13"
-      ],
-      "value": "SM-T970"
-    },
-    {
-      "archs": [
-        "arm"
-      ],
-      "device_type": "phone",
-      "os": "android",
-      "os_versions": [
-        "12"
-      ],
-      "value": "M2007J20CG"
-    },
-    {
-      "archs": [
-        "arm"
-      ],
-      "device_type": "phone",
-      "os": "android",
-      "os_versions": [
-        "13"
-      ],
-      "value": "SM-M526B"
-    },
-    {
-      "archs": [
-        "arm"
-      ],
-      "device_type": "phone",
-      "os": "android",
-      "os_versions": [
-        "13"
-      ],
-      "value": "moto g32"
-    }
-  ],
-  "msg": "",
-  "success": true
-}
-```
-
-
 ## 📁 Docker
 
 You can use examples below to run Octo Browser in docker containers.
- 
-Dockerfile
- 
-FROM ubuntu:22.04
-ARG TZ=America/Los_Angeles
-ARG DEBIAN_FRONTEND=noninteractive
-ENV LANG="C.UTF-8"
-RUN apt-get update && apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg \
-    unzip \
-    libgles2 libegl1 xvfb \
-    --no-install-recommends \
-    && curl -sSL https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update && apt-get install -y \
-    fontconfig \
-    fonts-ipafont-gothic \
-    fonts-kacst \
-    fonts-noto \
-    fonts-symbola \
-    fonts-thai-tlwg \
-    fonts-wqy-zenhei \
-    connect-proxy \
-    dnsutils \
-    fonts-freefont-ttf \
-    iproute2 \
-    iptables \
-    iputils-ping \
-    net-tools \
-    openvpn \
-    procps \
-    socat \
-    ssh \
-    sshpass \
-    sudo \
-    tcpdump \
-    telnet \
-    traceroute \
-    tzdata \
-    vim-nox
-RUN curl https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb --output /tmp/chrome.deb
-RUN apt install -y /tmp/chrome.deb
-# Install Octo dependencies
-RUN apt update \
-    && apt install -y libgl1 libglib2.0-0 xvfb zip
-# Create
-RUN mkdir -p /home/octo/browser
-# Create new user
-RUN groupadd -r octo && \
-    useradd -r -g octo -s /bin/bash -m -G audio,video,sudo -p $(echo 1 | openssl passwd -1 -stdin) octo && \
-    mkdir -p /home/octo/ && \
-    chown -R octo:octo /home/octo
-# Create sudoers.d directory and add sudo permissions for the octo user
-RUN mkdir -p /etc/sudoers.d && \
-    echo 'octo ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/octo && \
-    chmod 0440 /etc/sudoers.d/octo
-#sudo octo
-RUN usermod -a -G sudo octo
-USER octo
-# Install Octo browser
-RUN curl -o /home/octo/browser/octo-browser.tar.gz https://binaries.octobrowser.net/releases/installer/OctoBrowser.linux.tar.gz
-# Unzip Octo browser
-RUN tar -xzf /home/octo/browser/octo-browser.tar.gz -C /home/octo/browser
-# Start virtual display and Octo Browser in headless mode
-CMD Xvfb :1 -ac -screen 0 "1920x1080x24" -nolisten tcp +extension GLX +render -noreset & \
-    sudo chown -R octo:octo /home/octo && \
-    sleep 5 && DISPLAY=:1 OCTO_HEADLESS=1 /home/octo/browser/OctoBrowser.AppImage
-
- 
-run.sh
- 
-export EMAIL=your_email
-export PASSWORD=your_password
-export PROFILE_UUID=PUT_UUID_HERE
-docker build -t octobrowser:latest .
-docker run --name octo -it --rm \
-       --security-opt seccomp:unconfined \
-       -v '/srv/docker_octo/cache:/home/octo/.Octo Browser/' \
-       -p 58895:58888 \
-       octobrowser:latest
-# get xh: https://github.com/ducaale/xh/releases
-xh POST localhost:58895/api/auth/login email=${EMAIL} password=${PASSWORD}
-xh POST localhost:58895/api/profiles/start uuid=${PROFILE_UUID} headless:=true debug_port:=true
-
-
-### 📁 Docker golden-image
 
 Method 1: components folder on the host device
- 
+
 This method is suitable if your project architecture includes a static host device for building and running containers. Mount the components folder using the docker run command:
- 
+
 -v '/srv/docker_octo/cache:/home/octo/.Octo Browser/' \
 
- 
 Or use volumes in docker-compose.yaml:
- 
-volumes: 
+
+volumes:
      - /srv/docker_octo/cache:/home/octo/.Octo Browser/
 
- 
 Method 2: snapshot inside the image
- 
+
 This method is suitable if there is no static host device: the image can be distributed to any number of devices, and containers will start with the components already in place. Authentication is performed by passing an API token as a variable. The rest of this guide covers this method.
- 
+
 Note: you may encounter operational limitations if you run more than 5 containers simultaneously and:
- 
- 
-- 
+
+-
 All containers share the same IP address.
- 
- 
-- 
+
+-
 You log into the same Octo account.
- 
- 
- 
+
 What you'll need
- 
- 
-- 
+
+-
 Docker, Bash, and jq on the build device (Git Bash or WSL2 on Windows).
- 
- 
-- 
+
+-
 An Octo Browser API token.
- 
- 
-- 
+
+-
 About 6 GB of free disk space: octo:base ~2.3 GB, octo:ready ~4.9 GB (shared layers with the base image are not duplicated), snapshot ~700 MB.
- 
- 
-- 
+
+-
 15–40 minutes for the first full build, depending on network speed. Most of the time is spent installing packages in the base image and downloading ~1.8–2.2 GB of components.
- 
- 
- 
+
 Place all five files below in a single folder and run the build from that folder.
- 
+
 Step 1: creds.json
- 
+
 Create a file named creds.json, paste the text {"octo_api_token":"your_token_here"}, and replace "your_token_here" with your API token.
- 
+
 Step 2: dockerfile — base image
- 
+
 Create a file named dockerfile
- 
+
 FROM ubuntu:22.04
 ARG TZ=America/Los_Angeles
 ARG DEBIAN_FRONTEND=noninteractive
@@ -4213,16 +5341,14 @@ RUN curl -o /home/octo/browser/octo-browser.tar.gz \
  && rm -f /home/octo/browser/octo-browser.tar.gz
 CMD ["/bin/bash"]
 
- 
 Build the base image:
- 
+
 docker build -t octo:base -f dockerfile .
 
- 
 Step 3: entrypoint.sh — launching the browser in the container
- 
+
 The entrypoint.sh file starts a virtual display and launches Octo Browser in headless mode every time the container starts:
- 
+
 #!/usr/bin/env bash
 # entrypoint.sh — boot headless OctoBrowser inside octo:ready.
 set -u
@@ -4243,11 +5369,10 @@ term() { kill -TERM "$OCTO_PID" 2>/dev/null || true; }
 trap term TERM INT
 wait "$OCTO_PID"
 
- 
 Step 4: dockerfile.final — image with the snapshot
- 
+
 Create a file named dockerfile.final
- 
+
 # dockerfile.final — build octo:ready from octo:base + the golden snapshot.
 # Build: docker build -t octo:ready -f ./dockerfile.final .
 FROM octo:base
@@ -4261,13 +5386,12 @@ COPY --chown=octo:octo entrypoint.sh /home/octo/entrypoint.sh
 RUN chmod +x /home/octo/entrypoint.sh
 ENTRYPOINT ["/home/octo/entrypoint.sh"]
 
- 
 You don't need to build it manually, as the script in the next step will do this for you.
- 
+
 Step 5: build-golden.sh — creating the snapshot
- 
+
 Create a file named build-golden.sh
- 
+
 #!/usr/bin/env bash
 # build-golden.sh — capture a golden snapshot and build octo:ready.
 # Requires: octo:base already built, creds.json with an API token, docker, jq.
@@ -4436,49 +5560,41 @@ else
     exit 1
 fi
 
- 
 Run the script:
- 
+
 bash build-golden.sh
 
- 
 The script sequentially starts a container from octo:base, authenticates using the token, waits for the components to download, primes them by launching a one-time profile, packages ~/.Octo Browser into logged-in-state.tar.gz, builds octo:ready from it, and verifies that a fresh container starts already authenticated.
- 
+
 A successful completion looks like this:
- 
+
 === Checking octo:ready ===
- 
+
 OK: {"username":"your@email"}
- 
+
 DONE: octo:ready built, authorization works.
- 
+
 Step 6: running the finished image
- 
+
 docker run -d --init --name octo-1 --security-opt seccomp:unconfined \
     -e "OCTO_API_TOKEN=your_token_here" octo:ready
 
- 
- 
-- 
+-
 -e OCTO_API_TOKEN is required for authentication.
- 
- 
-- 
---security-opt seccomp:unconfined is required for the Chrome sandbox.
- 
- 
- 
-Updating the snapshot
- 
-The snapshot also locks in the component versions, so it will become outdated over time. To rebuild it, delete logged-in-state.tar.gz and run bash build-golden.sh again. If you also need to update the browser itself, rebuild the base image without the cache:
- 
-docker build --no-cache -t octo:base -f dockerfile .
 
+-
+--security-opt seccomp:unconfined is required for the Chrome sandbox.
+
+Updating the snapshot
+
+The snapshot also locks in the component versions, so it will become outdated over time. To rebuild it, delete logged-in-state.tar.gz and run bash build-golden.sh again. If you also need to update the browser itself, rebuild the base image without the cache:
+
+docker build --no-cache -t octo:base -f dockerfile .
 
 ## 📁 Kubernetes
 
 If you would like to run the browser inside a kubernetes pod, make sure to properly configure shared memory limits and capabilities
- 
+
 apiVersion: apps/v1
 kind: Deployment
 spec:
@@ -4505,19 +5621,16 @@ spec:
             medium: Memory
             sizeLimit: 4Gi
 
-
 ## 📁 Snippets
-
 
 ### 📁 Node.js
 
 Examples of useful scripts for Node.js
 
-
 #### 📁 Creating Profiles in Bulk
 
 Creating Profiles in Bulk
- 
+
 const axios = require('axios');
 // This is the configuration. Insert your API token and specify the desired number of profiles
 const config = {
@@ -4586,29 +5699,22 @@ async function create_profile(quantity) {
     await create_profile(config.quantity_of_profiles);
 })();
 
-
 #### 📁 Adding Extensions/Start Pages/Bookmarks to Profiles
 
 How to get the extension UUID using API:
- 
- 
-- 
+
+-
 Add the desired extension to any profile (read How to connect extensions to profiles to learn more).
- 
- 
-- 
+
+-
 Get the profile with the desired extension using a GET request.
- 
- 
-- 
+
+-
 The server response will contain all data about the profile, including UUIDs of connected extensions.
- 
- 
-- 
+
+-
 You can remove unnecessary server response fields to show only the extensions:
- 
- 
- 
+
 const axios = require('axios');
 const uuid = 'UUID'; // Specify the profile UUID here
 const api_token = 'OCTO_API_TOKEN' // Specify your API token here
@@ -4616,7 +5722,7 @@ const config = {
   method: 'get',
   maxBodyLength: Infinity,
   url: `https://app.octobrowser.net/api/v2/automation/profiles/${uuid}`,
-  headers: { 
+  headers: {
     'X-Octo-Api-Token': api_token
   }
 };
@@ -4628,9 +5734,8 @@ axios(config)
   console.log(error);
 });
 
- 
 Adding Extensions/Start Pages/Bookmarks to Multiple Profiles
- 
+
 const axios = require('axios');
 // This is the configuration. Specify your Octo API Token here; you can modify this for your personal needs
 const config = {
@@ -4705,9 +5810,8 @@ async function update_profile(uuid) {
     }
 })();
 
- 
 Adding Extensions/Start Pages/Bookmarks to all Profiles on your Account
- 
+
 const axios = require('axios');
 // This is the configuration. Specify your Octo API Token here; you can modify this for your personal needs
 const config = {
@@ -4803,11 +5907,10 @@ async function patch_all_profiles(profiles) {
     console.log(`Finished process:\nUpdated: ${updated.length}\nNot updated: ${not_updated.length}`);
 })();
 
- 
 Adding Extensions/Start Pages/Bookmarks to Profiles with Certain Tags
- 
+
 Note: You will get all profiles with the specified tag. This means that if a profile has other tags, it will still be included, so keep that in mind. If you specify two tags, you will only get profiles containing both tags.
- 
+
 const axios = require('axios');
 //This is the configuration. Specify your Octo API Token here; you can modify this for your personal needs
 const config = {
@@ -4904,21 +6007,20 @@ async function update_profile(uuid) {
     }
 })();
 
-
 #### 📁 Creating Saved Proxies in Bulk from a .TXT file and Creating Profiles with Them
 
 To use the following code, you need to have a .TXT file with the proxy data in the following format:
- 
+
 protocol;host;port;login;password;title;change_ip_url
- 
+
 The "change_ip_url" parameter is optional.
- 
+
 The proxy data must be provided strictly in the specified order.
- 
+
 Use only the following protocols: socks5, http, ssh.
- 
+
 An example file:
- [img: https://content.pstmn.io/bc2a08dd-3188-447e-9541-c831429c9186/U25pcHBldC5wbmc=] 
+ [img: https://content.pstmn.io/bc2a08dd-3188-447e-9541-c831429c9186/U25pcHBldC5wbmc=]
 const axios = require('axios');
 const fs = require('fs').promises;
 const config = {
@@ -5034,49 +6136,37 @@ async function main() {
 }
 main();
 
-
 #### 📁 Adding a Saved Proxy to a Profile
 
 How to get the UUID of a saved proxy using API:
- 
+
 Getting the favorite proxy's UUID from the profile data:
- 
- 
-- 
+
+-
 Connect the desired proxy to any profile.
- 
- 
-- 
+
+-
 Get the profile with the desired proxy using a GET request.
- 
- 
-- 
+
+-
 The server response will contain all data about the profile, including the UUID of the saved proxy.
- 
- 
-- 
+
+-
 You can remove unnecessary server response fields and display only the UUID of the saved proxy.
- 
- 
- 
+
 console.dir(response.data.data.proxy.uuid);
 // We don't have to output the whole response to the console, only the proxy's UUID.
 // Example of a server response:
 'f9092a2f33384823be70554442311cc6'
 
- 
 Getting the saved proxy's UUID from the Proxy Manager list:
- 
- 
-- 
+
+-
 Use a Get Proxies request (you can find it in the documentation). You will get the data for all proxies saved in the Proxy Manager of your Octo Browser account; copy the UUID of the proxy that you need.
- 
- 
-- 
+
+-
 Example of a server response:
- 
- 
- 
+
 {
       uuid: 'cbc173cc120747c7b57d4f6ea2496141',
       type: 'socks5',
@@ -5090,9 +6180,8 @@ Example of a server response:
       title: 'USA #2'
 },
 
- 
 Adding a Proxy to a Profile
- 
+
 const axios = require('axios');
 const config = {
   octo_token: "OCTO_API_TOKEN", // Specify your API token here
@@ -5126,13 +6215,12 @@ OCTO_REMOTE_API(patch_config)
     console.error('Error updating profile:', error.response ? error.response.data : error.message);
   });
 
-
 #### 📁 Exporting all Profiles on the Export List to Files
 
 This example collects profile data from the Export List and, based on that data, creates files with the .octo extension to be imported later.
- 
+
 Use an already existing folder for the "path_to_folder" parameter.
- 
+
 const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
@@ -5209,13 +6297,12 @@ async function write_to_files() {
   console.log('Profiles saved successfully.');
 })();
 
-
-#### 📁 Geting All Profile Titles
+#### 📁 Getting All Profile Titles
 
 This script retrieves all profile titles and saves them into a text file named profiles_titles.txt.
 
 The output file is created in the current working directory.
- 
+
 const fs = require('fs').promises;
 const axios = require('axios');
 //This is the configuration. Specify your Octo API Token here
@@ -5295,16 +6382,14 @@ async function write_file(profiles) {
     console.log('Finished. Check profiles_titles.txt file...');
 })()
 
-
 ### 📁 Python
 
 Examples of useful scripts for Python
 
-
 #### 📁 Create Profiles in Bulk
 
 Creating Profiles in Bulk
- 
+
 import requests
 import time
 # Configuration is here. Insert your API token and specify the desired number of profiles
@@ -5366,29 +6451,22 @@ def create_profiles(quantity):
 if __name__ == "__main__":
     create_profiles(config["quantity_of_profiles"])
 
-
 #### 📁 Adding Extensions/Start Pages/Bookmarks to Profiles
 
 How to get the extension UUID using API:
- 
- 
-- 
+
+-
 Add the desired extension to any profile (read How to connect extensions to profiles to learn more).
- 
- 
-- 
+
+-
 Get the profile with the desired extension using a GET request.
- 
- 
-- 
+
+-
 The server response will contain all data about the profile, including UUIDs of connected extensions.
- 
- 
-- 
+
+-
 You can remove unnecessary server response fields to show only the extensions:
- 
- 
- 
+
 import requests
 uuid = 'UUID'  # Specify the profile UUID here
 api_token = 'OCTO_API_TOKEN'  # Specify your API token here
@@ -5402,9 +6480,8 @@ data = response.json()
 extensions = data['data']['extensions']
 print(extensions)
 
- 
 Adding Extensions/Start Pages/Bookmarks to Multiple Profiles
- 
+
 import requests
 import time
 # This is the configuration. Specify your Octo API Token here; you can modify this for your personal needs
@@ -5473,9 +6550,8 @@ if __name__ == "__main__":
     for uuid in config["profiles_to_update"]:
         update_profile(uuid)
 
- 
 Adding Extensions/Start Pages/Bookmarks to all Profiles on your Account
- 
+
 import requests
 import math
 import time
@@ -5568,11 +6644,10 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Fatal error: {str(e)}")
 
- 
 Adding Extensions/Start Pages/Bookmarks to Profiles with Certain Tags
- 
+
 Note: You will get all profiles with the specified tag. This means that if a profile has other tags, it will still be included, so keep that in mind. If you specify two tags, you will only get profiles containing both tags.
- 
+
 import requests
 import math
 import time
@@ -5666,23 +6741,22 @@ def main():
 if __name__ == "__main__":
     main()
 
-
 #### 📁 Creating Saved Proxies in Bulk from a .TXT file and Creating Profiles with Them
 
 To work with this example of code, you should have a .TXT file with proxy data in the following format:
- 
+
 protocol;host;port;login;password;title;change_ip_url
- 
+
 change ip URL is optional.
- 
+
 The proxy data must be provided strictly in the specified order.
- 
+
 Use only the following protocols:
 
 socks5, http, ssh
- 
+
 An example file:
- [img: https://content.pstmn.io/bc2a08dd-3188-447e-9541-c831429c9186/U25pcHBldC5wbmc=] 
+ [img: https://content.pstmn.io/bc2a08dd-3188-447e-9541-c831429c9186/U25pcHBldC5wbmc=]
 import requests
 import time
 config = {
@@ -5786,31 +6860,24 @@ def main():
 if __name__ == "__main__":
     main()
 
-
 #### 📁 Adding a Saved Proxy to a Profile
 
 How to get the UUID of a saved proxy using API:
- 
+
 Getting the favorite proxy's UUID from the profile data:
- 
- 
-- 
+
+-
 Connect the desired proxy to any profile.
- 
- 
-- 
+
+-
 Get the profile with the desired proxy using a GET request.
- 
- 
-- 
+
+-
 The server response will contain all data about the profile, including the UUID of the saved proxy.
- 
- 
-- 
+
+-
 You can remove unnecessary server response fields and display only the UUID of the saved proxy.
- 
- 
- 
+
 import requests
 uuid = 'UUID'  # Place the profile UUID here
 api_token = 'OCTO_API_TOKEN'  # Place your API token here
@@ -5827,19 +6894,14 @@ try:
 except requests.exceptions.RequestException as e:
     print(f"Error: {e}")
 
- 
 Getting the saved proxy's UUID from the Proxy Manager list:
- 
- 
-- 
+
+-
 Use a Get Proxies request (you can find it in the documentation). You will get the data for all proxies saved in the Proxy Manager of your Octo Browser account; copy the UUID of the proxy that you need.
- 
- 
-- 
+
+-
 Example of a server response:
- 
- 
- 
+
 {
       uuid: 'cbc173cc120747c7b57d4f6ea2496141',
       type: 'socks5',
@@ -5853,9 +6915,8 @@ Example of a server response:
       profiles_count: 0
 }
 
- 
 Adding a Proxy to a Profile
- 
+
 import requests
 config = {
     "octo_token": "OCTO_API_TOKEN",           # Your API token
@@ -5883,13 +6944,12 @@ except requests.RequestException as e:
     else:
         print("Error updating profile:", str(e))
 
-
 #### 📁 Exporting all Profiles on the Export List to Files
 
 This example collects profile data from the Export List and, based on that data, creates files with the .octo extension to be imported later.
- 
+
 Use an already existing folder for the "PATH_TO_FOLDER" parameter.
- 
+
 import asyncio
 import httpx
 import json
@@ -5963,13 +7023,12 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 
-
-#### 📁 Geting All Profile Titles
+#### 📁 Getting All Profile Titles
 
 This script retrieves all profile titles and saves them into a text file named profiles_titles.txt.
 
 The output file is created in the current working directory.
- 
+
 import httpx
 import asyncio
 from pathlib import Path
@@ -6045,194 +7104,3 @@ async def main():
         print("Finished. Check profiles_titles.txt file...")
 if __name__ == "__main__":
     asyncio.run(main())
-
-
-## 📁 Action Log
-
-Action log stream
- 
-Endpoint
- 
- 
-- 
-Type: WebSocket
- 
- 
-- 
-URL: wss://app.octobrowser.net//api/v2/automation/ws/action_log
- 
- 
-- 
-Authentication: Auto API Token (header X-Octo-Api-Token)
- 
- 
- 
-Response Format
- 
-Each WebSocket message contains a StreamPage:
- 
-{
-"items": [
-    {
-    "uuid": "550e8400-e29b-41d4-a716-446655440000",
-    "action": "profiles.started",
-    "time": 1707053400,
-    "user_email": "user@example.com",
-    "object_type": "profile",
-    "object_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "object_title": "Octo Browser Profile",
-    "data": {
-        "connection_data": {
-            "ip": "203.0.113.42",
-            "countryCode": "FR",
-            "countryName": "France",
-            "subdivisions": [
-                "Île-de-France",
-                "Paris"
-            ],
-            "postalCode": "75008",
-            "cityName": "Paris",
-            "timezone": "Europe/Paris",
-            "lat": 48.8566,
-            "lon": 2.3522,
-            "languages": [
-                "fr",
-                "en-US",
-                "en"
-            ],
-            "isp": "Example Networks Ltd",
-            "connectionType": "Cable/DSL"
-        }
-    }
-    }
-  ],
-  "watermark": {
-      "uuid": "550e8400-e29b-41d4-a716-446655440000",
-      "time": 1707053400
-  }
-}
-
- 
-Examples
- 
-Initial Connection
- 
-wss://app.octobrowser.net/api/v2/automation/ws/action_log
- 
-Reconnect After Disconnect
- 
-Use the watermark UUID to resume:
- 
-wss://app.octobrowser.net/api/v2/automation/ws/action_log?after_uuid=abc-123
- 
-Start From Specific Time
- 
-wss://app.octobrowser.net/api/v2/automation/ws/action_log?from_timestamp=1707053400
- 
-Event Types (Actions)
- 
- 
-- 
-profiles.started - Profile browser was started
- 
- 
-- 
-profiles.stopped - Profile browser was stopped
- 
- 
-- 
-profiles.force_stopped - Profile browser was force stopped
- 
- 
-- 
-profiles.transferred - Profile was transferred
- 
- 
-- 
-profiles.trashed- Profile was moved to trash bin
- 
- 
-- 
-profiles.updated - Profile was updated
- 
- 
-- 
-profiles.deleted - Profile was deleted
- 
- 
-- 
-profiles.proxy_assigned - Proxy was assigned to profile
- 
- 
-- 
-profiles.proxy_unassigned - Proxy was unassigned from profile
- 
- 
-- 
-profiles.proxy_changed - Profile's proxy was changed to another one
- 
- 
- 
-Query Parameters
- 
- 
-- 
-after_uuid (string, UUID, optional) - UUID of the last received audit entry. Use this to resume streaming from a specific point.
- 
- 
-- 
-from_timestamp (integer, Unix timestamp, optional) - Start streaming from this timestamp. Events are only available for 24 hours.
- 
- 
- 
-How It Works
- 
- 
-- 
-Connect to the WebSocket endpoint
- 
- 
-- 
-Receive pages of events as JSON messages
- 
- 
-- 
-Use the watermark from each response to track your position in the stream and use these values ​​in case of reconnection
- 
- 
- 
-Watermark Mechanics
- 
-The watermark acts as a cursor for pagination:
- 
- 
-- 
-Contains uuid and time of the last record
- 
- 
-- 
-Ensures stable pagination even when multiple records share the same timestamp
- 
- 
-- 
-Use after_uuid parameter on reconnect to resume from where you left off
- 
- 
-- 
-Use the from_time parameter when reconnecting to continue from a specific time
- 
- 
- 
-Constraints
- 
- 
-- 
-Event retention: 24 hours
- 
- 
-- 
-Batch size: Up to 100 records per page
- 
- 
-- 
-Requirements: Team must have API option in subscription

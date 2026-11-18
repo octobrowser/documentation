@@ -105,6 +105,5 @@ changed (REFUTED claims must be resolved, not dropped silently).
 Write `$EV/REPORT.md` (adopted changes, kept divergences with evidence, ignored
 upstream issues, unresolved items) — do **not** commit it. Then commit with
 **one** single-line message covering the whole sync (squash intermediate commits;
-no bodies), e.g. `Sync with upstream: add X, fix Y (live-verified)`. Don't push
-unless asked. Finish with a short recap: what changed, what was verified live,
+no bodies), e.g. `Sync with upstream: add X, fix Y (live-verified)`. **Never push** — only the user pushes. Finish with a short recap: what changed, what was verified live,
 what remains open.

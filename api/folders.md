@@ -6,7 +6,7 @@ All endpoints return the standard envelope `{ "success": bool, "msg": string, "d
 
 ## Get Folders
 
-List every folder in the workspace. The response is not paginated.
+Returns the folders available to the calling token. A token with restricted folder access gets only its folders, possibly an empty list. The response is not paginated.
 
 **Endpoint**: `GET /folders`
 
@@ -37,6 +37,8 @@ curl -X GET "https://app.octobrowser.net/api/v2/automation/folders" \
 Creates one or more folders in a single request.
 
 **Endpoint**: `POST /folders`
+
+**Required permission:** Edit folders. Setting `assignable_wo_permission` additionally requires Manage team.
 
 Returns HTTP `200 OK` (not `201`, unlike `POST /profiles`, `POST /tags`, and `POST /proxies`).
 
@@ -75,6 +77,8 @@ curl -X POST "https://app.octobrowser.net/api/v2/automation/folders" \
 
 **Endpoint**: `PATCH /folders/{folder}`
 
+**Required permission:** Edit folders. Setting `assignable_wo_permission` additionally requires Manage team.
+
 The `{folder}` path parameter accepts either the folder UUID or the folder name. Both body fields are optional; supply only what you want to change:
 - `name` (string, optional) — new name, 1–20 characters.
 - `assignable_wo_permission` (bool, optional).
@@ -106,6 +110,8 @@ curl -X PATCH "https://app.octobrowser.net/api/v2/automation/folders/4d867ccd372
 ## Remove Folder
 
 **Endpoint**: `DELETE /folders/{folder}`
+
+**Required permission:** Edit folders.
 
 The `{folder}` path parameter accepts either the folder UUID or the folder name.
 
@@ -147,6 +153,8 @@ Profile payloads accept an optional `folder` field (string) on `POST /profiles`,
     }
   }
   ```
+
+- **403 Forbidden** — `no_permission`: the API token lacks Edit folders (or Manage team when setting `assignable_wo_permission`), or the folder is not available to the token.
 
 - **404 Not Found** — folder UUID or name does not exist:
 

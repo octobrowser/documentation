@@ -1,6 +1,8 @@
 # Error Handling
 
-The cloud API uses two distinct error envelopes: a **business error envelope** (returned for most non-2xx responses, including auth failures, missing resources, and conflicts) and a **validation envelope** (returned when the request body or query string is malformed).
+The cloud API uses two distinct error envelopes: a **business error envelope** (returned for most non-2xx responses, including auth failures, missing resources, and conflicts) and a **validation envelope** (returned when the request body, query string, or path parameters are malformed).
+
+Data types in response bodies: dates are ISO 8601 in **UTC** without a timezone suffix (`"2026-10-27T12:00:00"`); prices and balances are decimal strings (`"125.5"`, `"12.5"`).
 
 ## Business Error Envelope
 
@@ -15,7 +17,7 @@ The cloud API uses two distinct error envelopes: a **business error envelope** (
 
 - `success` is always `false` on errors.
 - `code` is a stable identifier you can branch on. The list below is not exhaustive.
-- `data` is `""` for most errors and an object for partial-failure responses (e.g. mass `force_stop`).
+- `data` is `""` for most errors and an object for partial-failure responses (e.g. mass `force_stop`, `DELETE /profiles` with nothing deleted, `POST /profiles/trash_bin/restore` with nothing restored).
 
 Real samples:
 
@@ -25,13 +27,32 @@ HTTP/2 401
 ```
 
 ```http
+HTTP/2 403
+{"success":false,"msg":"No permission","data":"","code":"no_permission"}
+```
+
+```http
 HTTP/2 404
 {"success":false,"msg":"Cannot find profile by uuid","data":"","code":"not_found"}
 ```
 
+```http
+HTTP/2 404
+{"success":false,"msg":"Profiles not found or active","data":{"deleted_uuids":[],"active_uuids":[],"protected_uuids":[],"not_found_uuids":["a1b2c3d4e5f60718293a4b5c6d7e8f90"]},"code":"not_found"}
+```
+
+The last sample is `DELETE /profiles` when nothing was deleted: unlike most errors, `data` carries the result lists.
+
+Some semantic validation errors also use the business envelope, with `code` set to `"validation_error"` (distinct from the `{"validation_error": {…}}` object below). Example — creating a `mac` profile with an `os_version` the platform does not allow:
+
+```http
+HTTP/2 400
+{"success":false,"msg":"OS version does not match allowed versions for the platform","data":"","code":"validation_error"}
+```
+
 ## Validation Envelope
 
-Bad query parameters or body fields return HTTP 400 with a different shape:
+Bad query parameters, body fields, or path parameters return HTTP 400 with a different shape (no `success`/`msg`/`code` fields):
 
 ```json
 {
@@ -48,7 +69,7 @@ Bad query parameters or body fields return HTTP 400 with a different shape:
 }
 ```
 
-Body validation uses the same shape, replacing `query_params` with `body_params`:
+The key says where the invalid field is: `query_params`, `body_params`, or `path_params`. Body validation example:
 
 ```json
 {
@@ -60,7 +81,19 @@ Body validation uses the same shape, replacing `query_params` with `body_params`
 }
 ```
 
-When you receive a 400, look for `validation_error` first. If it is missing, parse the response as a business error.
+Path validation example (unknown proxy `kind` in a provider lookup URL):
+
+```json
+{
+  "validation_error": {
+    "path_params": [
+      { "type": "enum", "loc": ["kind"], "msg": "Input should be 'mobile', 'residential' or 'data_center'", "input": "bogus" }
+    ]
+  }
+}
+```
+
+When you receive a 400, check whether `validation_error` is an **object** (validation envelope). Otherwise parse the response as a business error — its `code` may itself be the string `"validation_error"`.
 
 ## HTTP Status Codes
 
@@ -68,13 +101,14 @@ When you receive a 400, look for `validation_error` first. If it is missing, par
 |------|---------|
 | 200  | OK |
 | 201  | Created — returned by `POST /profiles`, `POST /tags`, and `POST /proxies` (`POST /folders` returns 200). |
-| 207  | Multi-Status — declared by the OpenAPI spec for `POST /profiles/import` partial results, and per the official Postman collection for a partially successful mass `POST /profiles/force_stop` (not live-verified). |
-| 400  | Bad request — body or query failed validation, or a domain rule rejected the call. |
+| 207  | Multi-Status — declared by the official OpenAPI spec for partial results of `POST /profiles/import`, `POST /profiles/export`, `POST /profiles/trash_bin/restore` and mass `POST /profiles/force_stop` (the Postman collection also documents it for mass force-stop). Not live-verified. |
+| 400  | Bad request — body, query or path failed validation, or a domain rule rejected the call. Costs extra rate-limit points (see [rate-limiting.md](rate-limiting.md#cost-of-failed-requests)). |
 | 401  | Invalid or missing `X-Octo-Api-Token`. |
-| 403  | The token is valid but the subaccount lacks the required permission, or a quota was reached. |
+| 403  | The token lacks the required permission (`no_permission`), the profile/folder is not available to the token, a plan limit was reached, or the API is disabled for the subscription. |
 | 404  | Resource (profile, tag, proxy, subaccount, …) does not exist. |
-| 409  | Conflict — resource is locked, running, or in a state that forbids the operation. |
-| 422  | Declared as the validation response throughout the official OpenAPI spec, but in practice the API returns validation failures as `400` with the `validation_error` envelope above. Treat a 422 body of `{ "detail": [{ "loc": [...], "msg": "...", "type": "..." }] }` as a rare fallback. |
+| 409  | Conflict — resource is locked, running, or in a state that forbids the operation. Costs extra rate-limit points. |
+| 415  | Unsupported Media Type — a request body was sent with a non-JSON `Content-Type` (per the official Postman collection). |
+| 422  | Not used by the cloud API: validation failures are `400` with the `validation_error` envelope above, and the current official OpenAPI spec no longer declares 422 (older versions did). The **local client** API does return `422` with `{ "detail": [{ "loc": [...], "msg": "...", "type": "..." }] }` — see [local-client.md](local-client.md#error-responses). |
 | 429  | Rate limit exceeded; see [rate-limiting.md](rate-limiting.md). |
 | 5xx  | Server-side issue. Retry with exponential backoff. |
 
@@ -88,7 +122,8 @@ The `code` field on the business error envelope. Codes prefixed with a domain (`
 |------|---------|
 | `api_token`         | Invalid or missing `X-Octo-Api-Token`. |
 | `not_found`         | Resource UUID does not exist (also returned for an unknown or temporary proxy UUID in a profile's `proxy` field: `proxy not found:`). |
-| `no_permission`     | Subaccount does not have permission for this action. |
+| `no_permission`     | The API token (or its folder scope) does not allow this action. See [API Token Permissions](authentication.md#api-token-permissions). |
+| `validation_error`  | Semantic validation failed (business envelope form, e.g. mac `os_version` not allowed for the platform). Not to be confused with the `validation_error` object of the validation envelope. |
 | `limit_reached`     | Resource limit reached on the current subscription. |
 | `already_exists`    | Conflict — a record with the same key already exists. |
 | `internal_error`    | Server-side fault. Retry. |
@@ -100,8 +135,11 @@ The `code` field on the business error envelope. Codes prefixed with a domain (`
 
 | Code | Meaning |
 |------|---------|
-| `profiles.started`               | Profile is already running. |
-| `profiles.not_started`           | Profile is not running. |
+| `profiles.started`               | Profile is already running (`409`, e.g. `POST /profiles/{uuid}/import_cookies` on a running profile). |
+| `profiles.not_started`           | Profile is not running (`409`, e.g. `POST /profiles/{uuid}/force_stop` on a stopped profile: `"Profile is not started"`). |
+| `profiles.access_error`          | `DELETE /profiles`: none of the requested profiles is accessible to the token (`403`). |
+| `profiles.maximum_saved_error`   | `POST /profiles/trash_bin/restore` would exceed the plan's profile limit; nothing is restored (`403`). |
+| `profiles.restore_error`         | `POST /profiles/trash_bin/restore` restored nothing (`400`, `"No profiles to restore"`). `data` carries `restored_uuids`, `payment_required_uuids`, `not_found_uuids`. |
 | `profiles.stop_error`            | Bulk force-stop stopped none of the profiles (`400`). `data.failed` lists the offending UUIDs. |
 | `profiles.consistency_error`     | `version` passed to `force_stop` does not match the server-side version. |
 | `profiles.update_error`          | Update payload was rejected, e.g. `fingerprint.os` on `PATCH /profiles/{uuid}` (`You can't update os.`). |
@@ -122,8 +160,13 @@ The `code` field on the business error envelope. Codes prefixed with a domain (`
 |------|---------|
 | `fingerprints.invalid`            | Fingerprint object failed server-side validation. |
 | `fingerprints.invalid_mobile_model` | `device_model` is unknown, or the chosen `os_version` is not in that model's `os_versions` list. |
+| `fingerprints.invalid_mobile_type` | Android `fingerprint.device_type` is not valid or does not match the chosen `device_model` (`400`, `"invalid mobile type"`). |
 | `subscriptions.inactive`          | Workspace has no active subscription. |
-| `proxy_providers.empty_balance`   | Built-in proxy provider has no balance. |
+| `proxy_providers.empty_balance`   | No traffic left for this provider (`400`, `POST /proxy_providers/proxies`). |
+| `proxy_providers.not_exists`      | Unknown or unavailable proxy provider UUID (`400`, not 404; `"Proxy provider is invalid, or not available"`). |
+| `proxy_providers.invalid`         | The provider does not offer the requested proxy kind (`400`, same `msg` as above). |
+| `proxy.vpn_field_not_applicable`  | `PATCH /proxies/{uuid}` on a VPN proxy with connection fields such as `host` or `login` (`400`, `"Connection fields cannot be set on a VPN proxy"`). |
+| `proxy.limit_reached`             | The plan limit of provider proxies is reached (`403`, `POST /proxy_providers/proxies`; per the official Postman collection). |
 | `proxy.maximum_saved_error`       | Proxy quota reached on the subscription. |
 
 ## Handling Errors in Code
@@ -148,8 +191,8 @@ def call(method, url, headers, max_retries=3, **kwargs):
         if response.ok and body.get("success"):
             return body
 
-        # Validation error?
-        if "validation_error" in body:
+        # Validation envelope? (the business envelope can also carry code "validation_error")
+        if isinstance(body.get("validation_error"), dict):
             raise ValueError(f"Validation failed: {body['validation_error']}")
 
         # Business error
@@ -167,6 +210,6 @@ def call(method, url, headers, max_retries=3, **kwargs):
 ## Debugging Tips
 
 - Log `x-trace-id` from the response headers — Octo Browser support uses it to look up the call server-side.
-- For 400s, inspect `validation_error` first; it pinpoints the offending field with `loc`.
+- For 400s, inspect the `validation_error` object first; it pinpoints the offending field with `loc`. Don't retry a 400 unchanged — it costs extra rate-limit points.
 - For 429s, slow your request rate before retrying; never tight-loop on `Retry-After: 0` if the body still says you are rate-limited.
 - For 5xx, retry with exponential backoff. If the failure persists, file a support ticket including the trace id.
